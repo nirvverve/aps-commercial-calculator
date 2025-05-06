@@ -1,0 +1,261 @@
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f6f9fc;
+    margin: 0;
+    padding: 0;
+    color: #222;
+}
+
+header {
+    text-align: center;
+    background: #1a237e;
+    color: #fff;
+    padding: 1.5em 0 1em 0;
+}
+
+#logo {
+    max-width: 240px; /* doubled from 120px */
+    margin-bottom: 0.5em;
+}
+
+h1 {
+    margin: 0 0 0.5em 0;
+    font-size: 2em;
+    letter-spacing: 0.04em;
+}
+
+main {
+    max-width: 700px;
+    margin: 2em auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(30,40,60,0.08);
+    padding: 2em 2em 2em 2em;
+}
+
+form {
+    margin-bottom: 2em;
+}
+
+.section {
+    margin-bottom: 2em;
+    padding-bottom: 1em;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.section:last-child {
+    border-bottom: none;
+}
+
+label {
+    display: block;
+    margin-bottom: 1em;
+    font-weight: 500;
+}
+
+input[type="number"], select {
+    margin-top: 0.3em;
+    padding: 0.5em;
+    border-radius: 5px;
+    border: 1px solid #bdbdbd;
+    font-size: 1em;
+    width: 100%;
+    max-width: 250px;
+    box-sizing: border-box;
+}
+
+button[type="submit"] {
+    background: #1a237e;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 0.8em 2em;
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 1em;
+    transition: background 0.2s;
+}
+button[type="submit"]:hover {
+    background: #3949ab;
+}
+
+/* Color coding for fields */
+.field-ph input { background: #ffebee; border-left: 5px solid #d32f2f; }    /* Red */
+.field-alk input { background: #e8f5e9; border-left: 5px solid #388e3c; }    /* Green */
+.field-ch input { background: #e3f2fd; border-left: 5px solid #1976d2; }    /* Blue */
+.field-tds input { background: #ececec; border-left: 5px solid #757575; }    /* Gray */
+.field-fac input { background: #fffde7; border-left: 5px solid #fbc02d; }    /* Yellow */
+.field-cya input { background: #f3e5f5; border-left: 5px solid #8e24aa; }    /* Purple */
+.field-salt input { background: #fff3e0; border-left: 5px solid #ef6c00; }    /* Orange */
+.field-temp input { background: #ececec; border-left: 5px solid #757575; }    /* Gray */
+/* Chemical dosage cards */
+.chem-card {
+    margin: 1em 0;
+    padding: 1em;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.chem-card.ph { background: #ffebee; }
+.chem-card.alk { background: #e8f5e9; }
+.chem-card.ch { background: #e3f2fd; }
+.chem-card.fac { background: #fffde7; }
+.chem-card.cya { background: #f3e5f5; }
+.chem-card.salt { background: #fff3e0; }
+.chem-card.acid { background: #ffebee; }
+
+.chem-card strong {
+    color: #000;
+    font-size: 1.1em;
+}
+
+/* Results section styling */
+#results {
+    background: #fff;
+    border-radius: 10px;
+    padding: 2em 1.5em;
+    margin-top: 2em;
+    font-size: 1.08em;
+    box-shadow: 0 1px 6px rgba(30,40,60,0.06);
+}
+/* TDS note */
+.field-tds span {
+    display: block;
+    margin-top: 0.2em;
+    font-size: 0.85em;
+    font-style: italic;
+    color: #757575;
+}
+
+/* Salt generator section */
+.section h2 {
+    color: #1a237e;
+    font-size: 1.15em;
+    margin-bottom: 0.7em;
+}
+
+/* Results styling */
+#results {
+    background: #f7fafc;
+    border-radius: 10px;
+    padding: 2em 1.5em;
+    margin-top: 2em;
+    font-size: 1.08em;
+    box-shadow: 0 1px 6px rgba(30,40,60,0.06);
+}
+
+#results h3 {
+    color: #1a237e;
+    margin-top: 1.2em;
+    margin-bottom: 0.5em;
+    font-size: 1.25em;
+}
+
+#results h4 {
+    color: #3949ab;
+    margin-top: 1em;
+    margin-bottom: 0.3em;
+    font-size: 1.1em;
+}
+
+#results ul {
+    margin: 0 0 1em 1.5em;
+    padding: 0;
+}
+
+#results li {
+    margin-bottom: 0.4em;
+}
+
+#results table {
+    width: 100%;
+    max-width: 500px;
+    margin: 1em auto 1.5em auto;
+    border-collapse: collapse;
+    font-size: 0.98em;
+    background: #fff;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(30,40,60,0.04);
+}
+
+#results th, #results td {
+    padding: 0.6em 0.8em;
+    text-align: left;
+}
+
+#results th {
+    background: #e3eafc;
+    color: #1a237e;
+    font-weight: 600;
+    border-bottom: 1px solid #bdbdbd;
+}
+
+#results tr:nth-child(even) td {
+    background: #f6f9fc;
+}
+
+#results tr td {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+#results tr:last-child td {
+    border-bottom: none;
+}
+
+#results em {
+    color: #757575;
+    font-size: 0.95em;
+}
+
+.error {
+    color: #b71c1c;
+    font-weight: 600;
+    margin: 1em 0;
+    font-size: 1.1em;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    header {
+        padding: 1em 0 0.5em 0;
+    }
+    #logo {
+        max-width: 140px;
+    }
+    h1 {
+        font-size: 1.3em;
+    }
+    main {
+        max-width: 100%;
+        margin: 0;
+        padding: 0.5em 0.2em;
+        border-radius: 0;
+        box-shadow: none;
+    }
+    .section {
+        margin-bottom: 1.2em;
+        padding-bottom: 0.7em;
+    }
+    label {
+        font-size: 1.08em;
+        margin-bottom: 1.2em;
+    }
+    input[type="number"], select {
+        font-size: 1.15em;
+        padding: 0.7em;
+        max-width: 100%;
+        min-height: 48px;
+    }
+    button[type="submit"] {
+        width: 100%;
+        font-size: 1.15em;
+        padding: 1em 0;
+        margin-top: 1.2em;
+    }
+    #results {
+        padding: 1em 0.3em;
+        font-size: 1em;
+    }
+}
