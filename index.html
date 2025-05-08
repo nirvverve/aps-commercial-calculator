@@ -1,97 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Chemistry Calculator for Residential Pools</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Mobile scaling -->
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <title>APS Commercial Pool Calculator</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <header>
-        <img src="logo.png" alt="Amenity Pool Services Logo" id="logo">
-        <h1>Pool Chemistry Calculator for Residential Pools</h1>
-    </header>
-    <main>
-        <form id="pool-form" autocomplete="off">
-            <section class="section">
-                <h2>Pool Capacity</h2>
-                <label>
-                    Pool Capacity (in gallons):
-                    <input type="number" id="capacity" min="500" required inputmode="numeric">
-                </label>
-            </section>
-            <section class="section">
-                <h2>Sanitize to Protect the Bathers</h2>
-                <label class="field-fac">
-                    Free Chlorine (ppm):
-                    <input type="number" id="freechlorine" min="0" step="0.1" required inputmode="decimal">
-                </label>
-                <label class="field-cya">
-                    Cyanuric Acid (ppm):
-                    <input type="number" id="cyanuric" min="0" step="1" required inputmode="numeric">
-                </label>
-            </section>
-            <section class="section">
-                <h2>Balance to Protect the Pool</h2>
-       
-                <label class="field-ph">
-                    pH:
-                    <input type="number" id="ph" min="6.0" max="9.0" step="0.01" required inputmode="decimal">
-                </label>
-                <label class="field-alk">
-                    Total Alkalinity (ppm):
-                    <input type="number" id="alkalinity" min="0" step="1" required inputmode="numeric">
-                </label>
-                <label class="field-ch">
-                    Calcium Hardness (ppm):
-                    <input type="number" id="calcium" min="0" step="1" required inputmode="numeric">
-                </label>
-                </section>
-            <section class="section">
-                <h2>Optional: Temperature & TDS Readings</h2>
-                <label class="field-tds">
-                    Total Dissolved Solids (ppm):
-                    <input type="number" id="tds" min="0" step="1" required inputmode="numeric" value="1000">
-                    <div class="note"><em>Note: Default is 1,000 ppm. If using TDS meter, enter actual result.</em></div>
-                </label>
-                <label class="field-temp">
-                    Water Temperature (°F):
-                    <input type="number" id="temperature" min="32" max="120" required inputmode="numeric" value="86">
-                    <div class="note"><em>Note: Default is 86 F. Change temperature as as needed (spas, fresh fills, etc.)</em></div>
-                </label>
-            </section>
-            <section class="section">
-                <h2>Salt Dosing - for Pools Using Salt</h2>
-                <label class="field-salt">
-                    Current Salt Level (ppm):
-                    <input type="number" id="salt-current" min="0" step="1" value="0" inputmode="numeric">
-                    <div class="note"><em>Note: If pool does not use salt, leave at 0 ppm.</em></div>
-                </label>
-                <label>
-                    Desired Salt Level (ppm):
-                    <select id="salt-desired">
-                        <option value="0">0 ppm</option>
-                        <option value="3200">3,200 ppm</option>
-                        <option value="3600">3,600 ppm</option>
-                        <option value="4000">4,000 ppm</option>
-                        <option value="4500">4,500 ppm</option>
-                    </select>
-                </label>
-            </section>
-            <section class="section">
-                <h2>Select Your State</h2>
-                <label>
-                    <select id="state" required>
-                        <option value="arizona">Arizona</option>
-                        <option value="texas">Texas</option>
-                        <option value="florida">Florida</option>
-                    </select>
-                </label>
-                <button type="submit">Calculate Chemical Dose Amounts & LSI</button>
-            </section>
-        </form>
-        <div id="results"></div>
-    </main>
-    <script src="script.js"></script>
+  <h1>APS Commercial Pool Calculator</h1>
+  <form id="poolForm">
+    <!-- Pool Capacity -->
+    <div class="section section-capacity">
+      <label for="poolCapacity">Pool Capacity (Gallons):</label>
+      <input type="number" id="poolCapacity" name="poolCapacity" min="0" required>
+    </div>
+
+    <!-- Section 1: Chlorine -->
+    <div class="section section-chlorine">
+      <h2>Chlorine</h2>
+      <div class="field field-fac">
+        <label for="freeChlorine">Free Chlorine (ppm):</label>
+        <input type="number" id="freeChlorine" name="freeChlorine" min="0" step="0.1" required>
+      </div>
+      <div class="field field-fac">
+        <label for="totalChlorine">Total Chlorine (ppm):</label>
+        <input type="number" id="totalChlorine" name="totalChlorine" min="0" step="0.1" required>
+      </div>
+      <div class="field field-fac">
+        <label for="combinedChlorine">Combined Chlorine (ppm):</label>
+        <input type="number" id="combinedChlorine" name="combinedChlorine" readonly>
+      </div>
+      <div class="field field-cya">
+        <label for="cya">Cyanuric Acid (ppm):</label>
+        <input type="number" id="cya" name="cya" min="0" step="1" required>
+      </div>
+      <div class="field field-fac">
+        <label>Chlorine Type:</label>
+        <div id="chlorineTypeOptions" class="chlorine-type-options">
+          <!-- Chlorine type buttons will be populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Balancing -->
+    <div class="section section-balancing">
+      <h2>Balancing</h2>
+      <div class="field field-ph">
+        <label for="ph">pH:</label>
+        <input type="number" id="ph" name="ph" min="0" max="14" step="0.01" required>
+      </div>
+      <div class="field field-alk">
+        <label for="alkalinity">Total Alkalinity (ppm):</label>
+        <input type="number" id="alkalinity" name="alkalinity" min="0" step="1" required>
+      </div>
+      <div class="field field-ch">
+        <label for="calcium">Calcium Hardness (ppm):</label>
+        <input type="number" id="calcium" name="calcium" min="0" step="1" required>
+      </div>
+    </div>
+
+    <!-- Section 3: Salt Level -->
+    <div class="section section-salt">
+      <h2>Salt Level</h2>
+      <div class="field field-salt">
+        <label for="saltLevel">Current Salt Level in Pool (ppm):</label>
+        <input type="number" id="saltLevel" name="saltLevel" min="0" step="1">
+      </div>
+      <div class="field field-salt">
+        <label for="targetSaltLevel">Target Salt Level (ppm):</label>
+        <select id="targetSaltLevel" name="targetSaltLevel">
+          <option value="3200">3,200 ppm</option>
+          <option value="3400">3,400 ppm</option>
+          <option value="3600">3,600 ppm</option>
+          <option value="4000">4,000 ppm</option>
+          <option value="4500">4,500 ppm</option>
+          <option value="5000">5,000 ppm</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Section 4: Other -->
+    <div class="section section-other">
+      <h2>Other</h2>
+      <div class="field field-temp">
+        <label for="temperature">Temperature (°F):</label>
+        <input type="number" id="temperature" name="temperature" min="0" max="120" step="0.1">
+      </div>
+      <div class="field field-tds">
+        <label for="tds">TDS (Total Dissolved Solids, ppm):</label>
+        <input type="number" id="tds" name="tds" min="0" step="1">
+      </div>
+    </div>
+
+    <!-- State, Pool Type, and other selectors -->
+    <div class="section section-meta">
+      <label for="stateSelect">State:</label>
+      <select id="stateSelect" required>
+        <option value="">Select State</option>
+        <option value="Arizona">Arizona</option>
+        <option value="Florida">Florida</option>
+        <option value="Texas">Texas</option>
+      </select>
+
+      <label for="poolTypeSelect">Pool Type:</label>
+      <select id="poolTypeSelect" required>
+        <option value="">Select Pool Type</option>
+        <option value="pool">Pool</option>
+        <option value="spa">Spa</option>
+      </select>
+    </div>
+
+    <button type="submit">Calculate</button>
+  </form>
+
+  <div id="results"></div>
+
+  <script type="module" src="script.js"></script>
 </body>
 </html>
