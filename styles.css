@@ -327,6 +327,8 @@ button[type="submit"]:hover {
     font-size: 1.05em;
     margin-bottom: 0.5em;
   }
+
+
 /* Responsive */
 @media (max-width: 600px) {
     header {
@@ -369,8 +371,6 @@ button[type="submit"]:hover {
         padding: 1em 0.3em;
         font-size: 1em;
     }
-    /* ...existing styles... */
-
 .alkalinity-scale.green-theme {
     background: #eafbe7;
     border: 2px solid #4caf50;
@@ -428,4 +428,301 @@ button[type="submit"]:hover {
     color: #388e3c;
     font-weight: bold;
   }  
+}
+
+/* LSI Scale and Components Table */
+.lsi-summary-section {
+  margin: 2em 0 0 0;
+  padding: 1.5em 1em 1em 1em;
+  background: #f7fafc;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(30,40,60,0.06);
+}
+
+.lsi-scale-container {
+  margin-bottom: 1.5em;
+}
+
+.lsi-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.98em;
+  margin-bottom: 4px;
+  color: #757575;
+}
+
+.lsi-scale-bar {
+  position: relative;
+  height: 22px;
+  background: #ececec;
+  border-radius: 11px;
+  margin-bottom: 8px;
+  overflow: visible;
+}
+
+.lsi-scale-bar-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #ececec;
+  border-radius: 11px;
+  z-index: 1;
+}
+
+.lsi-scale-bar-indicator {
+  position: absolute;
+  top: 0;
+  width: 6px;
+  height: 22px;
+  border-radius: 3px;
+  z-index: 2;
+  transition: left 0.3s;
+}
+
+.lsi-scale-value {
+  position: absolute;
+  top: -28px;
+  font-size: 1em;
+  font-weight: bold;
+  color: #222;
+  background: #fff;
+  border: 1.5px solid #bbb;
+  border-radius: 6px;
+  padding: 2px 10px;
+  box-shadow: 0 1px 4px #0001;
+  transform: translateX(-50%);
+  z-index: 3;
+  min-width: 38px;
+  text-align: center;
+}
+
+.lsi-components-table {
+  width: 100%;
+  max-width: 520px;
+  margin: 1em auto 0 auto;
+  border-collapse: collapse;
+  font-size: 0.98em;
+  background: #fff;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(30,40,60,0.04);
+}
+
+.lsi-components-table th, .lsi-components-table td {
+  padding: 0.6em 0.8em;
+  text-align: left;
+}
+
+.lsi-components-table th {
+  background: #e3eafc;
+  color: #1a237e;
+  font-weight: 600;
+  border-bottom: 1px solid #bdbdbd;
+}
+
+.lsi-components-table tr.field-ph td { background: #ffebee; border-left: 5px solid #d32f2f; }
+.lsi-components-table tr.field-alk td { background: #e8f5e9; border-left: 5px solid #388e3c; }
+.lsi-components-table tr.field-ch td { background: #e3f2fd; border-left: 5px solid #1976d2; }
+.lsi-components-table tr.field-tds td { background: #ececec; border-left: 5px solid #757575; }
+.lsi-components-table tr.field-cya td { background: #f3e5f5; border-left: 5px solid #8e24aa; }
+.lsi-components-table tr.field-temp td { background: #ececec; border-left: 5px solid #757575; }
+
+.lsi-components-table tr td {
+  border-bottom: 1px solid #f0f0f0;
+}
+.lsi-components-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Responsive for LSI section */
+@media (max-width: 600px) {
+  .lsi-summary-section {
+    padding: 1em 0.3em;
+  }
+  .lsi-components-table {
+    font-size: 0.95em;
+  }
+  .lsi-scale-value {
+    font-size: 0.95em;
+    min-width: 32px;
+    padding: 2px 6px;
+  }
+}
+#results .lsi-summary-section {
+  margin: 2em 0 0 0;
+  padding: 1.5em 1em 1em 1em;
+  background: #f7fafc;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(30,40,60,0.06);
+}
+
+#results .lsi-scale-container {
+  margin-bottom: 1.5em;
+}
+
+#results .lsi-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.98em;
+  margin-bottom: 4px;
+  color: #757575;
+}
+
+#results .lsi-scale-bar {
+  position: relative;
+  height: 22px;
+  background: #ececec;
+  border-radius: 11px;
+  margin-bottom: 8px;
+  overflow: visible;
+}
+
+#results .lsi-scale-bar-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #ececec;
+  border-radius: 11px;
+  z-index: 1;
+}
+
+#results .lsi-scale-bar-indicator {
+  position: absolute;
+  top: 0;
+  width: 6px;
+  height: 22px;
+  border-radius: 3px;
+  z-index: 2;
+  transition: left 0.3s;
+}
+
+#results .lsi-scale-value {
+  position: absolute;
+  top: -28px;
+  font-size: 1em;
+  font-weight: bold;
+  color: #222;
+  background: #fff;
+  border: 1.5px solid #bbb;
+  border-radius: 6px;
+  padding: 2px 10px;
+  box-shadow: 0 1px 4px #0001;
+  transform: translateX(-50%);
+  z-index: 3;
+  min-width: 38px;
+  text-align: center;
+}
+
+#results .lsi-components-table {
+  width: 100%;
+  max-width: 520px;
+  margin: 1em auto 0 auto;
+  border-collapse: collapse;
+  font-size: 0.98em;
+  background: #fff;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(30,40,60,0.04);
+}
+
+#results .lsi-components-table th, #results .lsi-components-table td {
+  padding: 0.6em 0.8em;
+  text-align: left;
+}
+
+#results .lsi-components-table th {
+  background: #e3eafc;
+  color: #1a237e;
+  font-weight: 600;
+  border-bottom: 1px solid #bdbdbd;
+}
+
+#results .lsi-components-table tr.field-ph td { background: #ffebee; border-left: 5px solid #d32f2f; }
+#results .lsi-components-table tr.field-alk td { background: #e8f5e9; border-left: 5px solid #388e3c; }
+#results .lsi-components-table tr.field-ch td { background: #e3f2fd; border-left: 5px solid #1976d2; }
+#results .lsi-components-table tr.field-tds td { background: #ececec; border-left: 5px solid #757575; }
+#results .lsi-components-table tr.field-cya td { background: #f3e5f5; border-left: 5px solid #8e24aa; }
+#results .lsi-components-table tr.field-temp td { background: #ececec; border-left: 5px solid #757575; }
+
+#results .lsi-components-table tr td {
+  border-bottom: 1px solid #f0f0f0;
+}
+#results .lsi-components-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Responsive for LSI section */
+@media (max-width: 600px) {
+  #results .lsi-summary-section {
+    padding: 1em 0.3em;
+  }
+  #results .lsi-components-table {
+    font-size: 0.95em;
+  }
+  #results .lsi-scale-value {
+    font-size: 0.95em;
+    min-width: 32px;
+    padding: 2px 6px;
+  }
+}
+/* --- LSI Scale: Value label above, scale labels below --- */
+.lsi-scale-container,
+#results .lsi-scale-container {
+  margin-bottom: 2.5em;
+  position: relative;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+}
+
+.lsi-scale-bar,
+#results .lsi-scale-bar {
+  position: relative;
+  height: 22px;
+  background: #ececec;
+  border-radius: 11px;
+  margin-bottom: 0; /* No margin below bar */
+  overflow: visible;
+  order: 1;
+}
+
+.lsi-scale-value,
+#results .lsi-scale-value {
+  position: absolute;
+  top: -28px; /* Value label above the bar */
+  font-size: 1em;
+  font-weight: bold;
+  color: #222;
+  background: #fff;
+  border: 1.5px solid #bbb;
+  border-radius: 6px;
+  padding: 2px 10px;
+  box-shadow: 0 1px 4px #0001;
+  transform: translateX(-50%);
+  z-index: 3;
+  min-width: 38px;
+  text-align: center;
+}
+
+.lsi-scale-labels,
+#results .lsi-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.98em;
+  margin-top: 8px;
+  color: #757575;
+  order: 2; /* Ensure labels are below the bar */
+}
+
+/* Responsive for LSI section */
+@media (max-width: 600px) {
+  .lsi-scale-value,
+  #results .lsi-scale-value {
+    font-size: 0.95em;
+    min-width: 32px;
+    padding: 2px 6px;
+    top: -24px;
+  }
+  .lsi-scale-container,
+  #results .lsi-scale-container {
+    min-height: 54px;
+  }
 }
