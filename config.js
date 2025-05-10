@@ -60,3 +60,17 @@ const poolStandards = {
   ];
   
   export { poolStandards, chlorineTypes };
+export const goldenNumbers = {
+  pool: {
+    cya: 50,
+    alkalinity: 100,
+    calcium: 400,
+    ph: 7.6
+  },
+  spa: {
+    cya: 0,
+    alkalinity: 80,
+    calcium: 300,
+    ph: 7.5
+  }
+};

@@ -7,6 +7,7 @@ import { renderTdsDisplay } from './TdsDisplay.js';
 import { formatChlorineDose } from './ChlorineDoseUtils.js';
 import { renderChlorineScaleDisplay } from './ChlorineScaleDisplay.js';
 import { renderLSIScale, renderLSIComponentsTable } from './LsiDisplay.js';
+import { renderWaterBalanceSteps } from './WaterBalanceDisplay.js';
 
 // --- LSI FACTOR TABLES (from calculator.js) ---
 const ALKALINITY_FACTORS = [
@@ -311,6 +312,16 @@ document.getElementById('poolForm').addEventListener('submit', function(e) {
   });
 const LSIScaleHTML = renderLSIScale(lsiFactors.lsi);
 const LSIComponentsTableHTML = renderLSIComponentsTable(lsiFactors);
+const waterBalanceStepsHTML = renderWaterBalanceSteps({
+  poolType: poolTypeSelect.value,
+  poolVolume: values.poolVolume,
+  current: {
+    cya: values.cya,
+    alkalinity: values.alkalinity,
+    calcium: values.calcium,
+    ph: values.ph
+  }
+})
 
   // --- Results Output ---
   resultsDiv.innerHTML = `
@@ -330,6 +341,7 @@ const LSIComponentsTableHTML = renderLSIComponentsTable(lsiFactors);
      ${CyaDisplayHTML}
      ${ChlorineScaleDisplayHTML}
      ${doseTableHTML}
+     ${waterBalanceStepsHTML}
      </div>
    </details>
    <details class="compliance-summary-details" open>
