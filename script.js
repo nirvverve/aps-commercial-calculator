@@ -8,6 +8,8 @@ import { formatChlorineDose } from './ChlorineDoseUtils.js';
 import { renderChlorineScaleDisplay } from './ChlorineScaleDisplay.js';
 import { renderLSIScale, renderLSIComponentsTable } from './LsiDisplay.js';
 import { renderWaterBalanceSteps } from './WaterBalanceDisplay.js';
+import { renderBreakpointChlorination } from './BreakpointChlorinationDisplay.js';
+export { advancedLSI };
 
 // --- LSI FACTOR TABLES (from calculator.js) ---
 const ALKALINITY_FACTORS = [
@@ -265,6 +267,12 @@ document.getElementById('poolForm').addEventListener('submit', function(e) {
   });
 
   // --- Alkalinity and Calcium Hardness Displays ---
+  const BreakpointChlorinationHTML = renderBreakpointChlorination({
+    freeChlorine: values.freeChlorine,
+    totalChlorine: values.totalChlorine,
+    poolVolume: values.poolVolume,
+    chlorineType: selectedChlorineType
+  });
   const alkDisplayHTML = renderAlkalinityDisplay({
     state: stateSelect.value,
     poolType: poolTypeSelect.value,
@@ -321,7 +329,7 @@ const waterBalanceStepsHTML = renderWaterBalanceSteps({
     calcium: values.calcium,
     ph: values.ph
   }
-})
+});
 
   // --- Results Output ---
   resultsDiv.innerHTML = `
@@ -338,6 +346,7 @@ const waterBalanceStepsHTML = renderWaterBalanceSteps({
    <details class="sanitizer-details" open>
      <summary><strong>Sanitizer & Stabilizer Detail</strong></summary>
      <div class="sanitizer-parameter-charts">
+     ${BreakpointChlorinationHTML}
      ${CyaDisplayHTML}
      ${ChlorineScaleDisplayHTML}
      ${doseTableHTML}
@@ -415,6 +424,6 @@ const waterBalanceStepsHTML = renderWaterBalanceSteps({
      </div>
    </details>
    `;
- });
+       });
 
 // ... rest of code remains same

@@ -1,4 +1,3 @@
-
 import { getWaterBalanceSteps } from './WaterBalanceUtils.js';
 
 /**
@@ -8,10 +7,13 @@ import { getWaterBalanceSteps } from './WaterBalanceUtils.js';
  * @param {number} poolVolume - gallons
  * @param {object} current - { cya, alkalinity, calcium, ph }
  * @param {object} [targets] - optional custom targets
+ * @param {number} [tempF] - water temperature (F)
+ * @param {number} [tds] - total dissolved solids (ppm)
  * @returns {string} HTML
  */
-export function renderWaterBalanceSteps({ poolType, poolVolume, current, targets = {} }) {
-  const steps = getWaterBalanceSteps({ poolType, poolVolume, current, targets });
+export function renderWaterBalanceSteps({ poolType, poolVolume, current, targets = {}, tempF = 77, tds = 1000 }) {
+  // getWaterBalanceSteps now returns { steps, notes }
+  const { steps, notes } = getWaterBalanceSteps({ poolType, poolVolume, current, targets, tempF, tds });
 
   return `
     <div class="section water-balance-steps">
@@ -38,6 +40,14 @@ export function renderWaterBalanceSteps({ poolType, poolVolume, current, targets
           `).join('')}
         </tbody>
       </table>
+      ${notes && notes.length > 0 ? `
+        <div class="water-balance-notes" style="margin-top:1em;color:#b71c1c;">
+          <strong>Note:</strong>
+          <ul>
+            ${notes.map(n => `<li>${n}</li>`).join('')}
+          </ul>
+        </div>
+      ` : ''}
       <div style="margin-top:0.7em;font-size:0.98em;color:#757575;">
         <em>Adjust chemicals in the order shown above for best results.</em>
       </div>
