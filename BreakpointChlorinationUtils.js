@@ -20,9 +20,9 @@ export function getBreakpointChlorination({
 
   let recommendation = '';
   if (combinedChlorine >= 1.6) {
-    recommendation = 'Immediate breakpoint chlorination (shock) is recommended.';
+    recommendation = 'Immediate breakpoint chlorination (shock) is recommended.  Dosing at night after pool closes for the day is most effective.';
   } else if (combinedChlorine >= 0.6) {
-    recommendation = 'Breakpoint chlorination (shock) should be performed within 72 hours.';
+    recommendation = 'Breakpoint chlorination (shock) should be performed within 72 hours right after pool closes for the day.';
   } else {
     recommendation = 'The pool does not need to be brought to breakpoint this week.';
   }

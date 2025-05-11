@@ -1,5 +1,13 @@
 import { getWaterBalanceSteps } from './WaterBalanceUtils.js';
 
+// Color classes for each parameter
+const PARAM_COLORS = {
+  cya: 'cya-purple',
+  alkalinity: 'alk-green',
+  calcium: 'calcium-blue',
+  ph: 'ph-red'
+};
+
 /**
  * Render a table of water balance steps (dosing order, current, target, dose).
  * @param {object} params
@@ -12,12 +20,44 @@ import { getWaterBalanceSteps } from './WaterBalanceUtils.js';
  * @returns {string} HTML
  */
 export function renderWaterBalanceSteps({ poolType, poolVolume, current, targets = {}, tempF = 77, tds = 1000 }) {
-  // getWaterBalanceSteps now returns { steps, notes }
   const { steps, notes } = getWaterBalanceSteps({ poolType, poolVolume, current, targets, tempF, tds });
 
+  // Determine which parameters are out of range for the summary
+  const outOfRangeSteps = steps.filter(step => {
+    if (step.key === 'ph') return step.current !== step.target;
+    return step.current < step.target || step.current > step.target;
+  });
+
+  // Water Balance Plan Summary
+  const planSummary = outOfRangeSteps.length
+    ? `<div class="water-balance-plan-summary" style="margin-bottom:1em;">
+        <strong>Water Balance Plan Summary:</strong><br>
+        Adjust the following parameters in order, one per day:<br>
+        <ol>
+          ${outOfRangeSteps.map((step, idx) =>
+            `<li>Day ${idx + 1}: <span class="${PARAM_COLORS[step.key]}">${step.parameter}</span></li>`
+          ).join('')}
+        </ol>
+      </div>`
+    : `<div class="water-balance-plan-summary" style="margin-bottom:1em;">
+        <strong>Water Balance Plan Summary:</strong> All parameters are within target range.
+      </div>`;
+
+  // Table with color classes
   return `
+    <style>
+      .cya-purple { color: #8e24aa; font-weight: bold; }
+      .alk-green { color: #388e3c; font-weight: bold; }
+      .calcium-blue { color: #1976d2; font-weight: bold; }
+      .ph-red { color: #d32f2f; font-weight: bold; }
+      .dose-table tr.cya-purple td, .dose-table tr.cya-purple th { background: #f3e5f5; }
+      .dose-table tr.alk-green td, .dose-table tr.alk-green th { background: #e8f5e9; }
+      .dose-table tr.calcium-blue td, .dose-table tr.calcium-blue th { background: #e3f2fd; }
+      .dose-table tr.ph-red td, .dose-table tr.ph-red th { background: #ffebee; }
+    </style>
     <div class="section water-balance-steps">
       <h3>Water Balance Adjustment Steps</h3>
+      ${planSummary}
       <table class="dose-table">
         <thead>
           <tr>
@@ -30,9 +70,9 @@ export function renderWaterBalanceSteps({ poolType, poolVolume, current, targets
         </thead>
         <tbody>
           ${steps.map((step, idx) => `
-            <tr>
+            <tr class="${PARAM_COLORS[step.key] || ''}">
               <td>${idx + 1}</td>
-              <td>${step.parameter}</td>
+              <td><span class="${PARAM_COLORS[step.key] || ''}">${step.parameter}</span></td>
               <td>${step.current !== undefined && step.current !== null ? step.current : '-'}</td>
               <td>${step.target !== undefined && step.target !== null ? step.target : '-'}</td>
               <td>${step.dose ? `<span class="dose">${step.dose}</span>` : '<em>None needed</em>'}</td>

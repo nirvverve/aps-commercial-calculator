@@ -144,16 +144,8 @@ export function getWaterBalanceSteps({
     }
   }
 
-  // Order: CYA, Alkalinity, Calcium, pH
+  // Order: Alkalinity, Calcium, CYA, pH
   const steps = [];
-
-  // CYA
-  steps.push({
-    parameter: 'Cyanuric Acid',
-    current: current.cya,
-    target: t.cya,
-    dose: cyaDose(current.cya, t.cya, poolVolume)
-  });
 
   // Alkalinity
   steps.push({
@@ -169,6 +161,14 @@ export function getWaterBalanceSteps({
     current: current.calcium,
     target: t.calcium,
     dose: calciumDose(current.calcium, t.calcium, poolVolume)
+  });
+
+  // CYA
+  steps.push({
+    parameter: 'Cyanuric Acid',
+    current: current.cya,
+    target: t.cya,
+    dose: cyaDose(current.cya, t.cya, poolVolume)
   });
 
   // pH (can be up or down)

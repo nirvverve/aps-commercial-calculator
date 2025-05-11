@@ -726,3 +726,42 @@ button[type="submit"]:hover {
     min-height: 54px;
   }
 }
+/* ... existing styles ... */
+
+.salt-dose-result {
+  background: #fff3e0;
+  border-left: 5px solid #ef6c00;
+  padding: 18px 22px;
+  margin: 18px 0 8px 0;
+  border-radius: 7px;
+  font-size: 1.08em;
+  color: #333;
+  box-shadow: 0 1px 4px #0001;
+}
+
+.salt-dose-result h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #fff3e0;
+  font-size: 1.13em;
+  font-weight: bold;
+}
+
+.salt-dose-result p {
+  margin: 0;
+  font-size: 1.05em;
+  font-weight: 500;
+}
+
+/* Optional: style for the collapsible salt dose section */
+details.salt-dose-details > summary {
+  color: #333;
+  font-weight: bold;
+  font-size: 1.08em;
+  cursor: poin6ter;
+}
+
+.salt-dose-parameter-charts {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}

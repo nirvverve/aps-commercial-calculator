@@ -9,6 +9,7 @@ import { renderChlorineScaleDisplay } from './ChlorineScaleDisplay.js';
 import { renderLSIScale, renderLSIComponentsTable } from './LsiDisplay.js';
 import { renderWaterBalanceSteps } from './WaterBalanceDisplay.js';
 import { renderBreakpointChlorination } from './BreakpointChlorinationDisplay.js';
+import { getSaltDose } from './SaltDoseUtils.js';
 export { advancedLSI };
 
 // --- LSI FACTOR TABLES (from calculator.js) ---
@@ -267,6 +268,17 @@ document.getElementById('poolForm').addEventListener('submit', function(e) {
   });
 
   // --- Alkalinity and Calcium Hardness Displays ---
+  const saltDoseResult = getSaltDose({
+    currentSalt: values.saltLevel,
+    targetSalt: values.targetSaltLevel,
+    poolVolume: values.poolVolume
+  });
+  const saltDoseHTML = `
+  <div class="salt-dose-result">
+    <h4>Salt Addition Recommendation</h4>
+    <p>${saltDoseResult.display}</p>
+  </div>
+`;
   const BreakpointChlorinationHTML = renderBreakpointChlorination({
     freeChlorine: values.freeChlorine,
     totalChlorine: values.totalChlorine,
@@ -353,6 +365,12 @@ const waterBalanceStepsHTML = renderWaterBalanceSteps({
      ${waterBalanceStepsHTML}
      </div>
    </details>
+   <details class="salt-dose-details" open>
+    <summary><strong>Salt Dose Recommendation</strong></summary>
+    <div class="salt-dose-parameter-charts">
+      ${saltDoseHTML}
+    </div>
+  </details>
    <details class="compliance-summary-details" open>
      <summary><strong>Summary of Compliance With State Code</strong></summary>
      <div class="compliance-summary-table-wrap">
