@@ -64,7 +64,7 @@ export const goldenNumbers = {
   pool: {
     cya: 50,
     alkalinity: 100,
-    calcium: 400,
+    calcium: 300,
     ph: 7.6
   },
   spa: {

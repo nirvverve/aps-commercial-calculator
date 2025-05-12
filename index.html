@@ -93,22 +93,12 @@
 
     <!-- State, Pool Type, and other selectors -->
     <div class="section section-meta">
-      <label for="stateSelect">State:</label>
-      <select id="stateSelect" required>
-        <option value="">Select State</option>
-        <option value="Arizona">Arizona</option>
-        <option value="Florida">Florida</option>
-        <option value="Texas">Texas</option>
-      </select>
-
-      <label for="poolTypeSelect">Pool Type:</label>
-      <select id="poolTypeSelect" required>
-        <option value="">Select Pool Type</option>
-        <option value="pool">Pool</option>
-        <option value="spa">Spa</option>
-      </select>
+      <label>State:</label>
+  <div id="stateOptions" class="state-type-options"></div>
+      <label>Pool Type:</label>
+  <div id="poolTypeOptions" class="pool-type-options"></div>
+</div>
     </div>
-
     <button type="submit">Calculate</button>
   </form>
 
