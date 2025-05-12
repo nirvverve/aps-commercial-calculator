@@ -1,8 +1,5 @@
-APS Calculator v1.5
+APS Commercial Calculator
 
-Updates 5/3
+v 1.0.0
 
-1 - Cleaned up output area with new "cue cards" that match colors of Taylor reagents in summary section and give dosages on the "cue cards".  
-
-2 - Removed redundant information from the "Detailed Summary".  
-
+initial test release
