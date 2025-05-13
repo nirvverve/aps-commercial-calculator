@@ -10,6 +10,7 @@ import { renderLSIScale, renderLSIComponentsTable } from './LsiDisplay.js';
 import { renderWaterBalanceSteps } from './WaterBalanceDisplay.js';
 import { renderBreakpointChlorination } from './BreakpointChlorinationDisplay.js';
 import { getSaltDose } from './SaltDoseUtils.js';
+import { renderTodayDosageCards } from './WaterBalanceUtils.js';
 export { advancedLSI };
 
 // --- State and Pool Type Buttons ---
@@ -312,6 +313,20 @@ document.getElementById('poolForm').addEventListener('submit', function(e) {
   });
 
   // --- Alkalinity and Calcium Hardness Displays ---
+  const todayDosageCardsHTML = renderTodayDosageCards({
+    poolType: selectedPoolType,
+    poolVolume: values.poolVolume,
+    current: {
+      cya: values.cya,
+      alkalinity: values.alkalinity,
+      calcium: values.calcium,
+      ph: values.ph
+    },
+    tempF: values.temperature,
+    tds: values.tds,
+    freeChlorine: values.freeChlorine,
+    totalChlorine: values.totalChlorine
+  });
   const saltDoseResult = getSaltDose({
     currentSalt: values.saltLevel,
     targetSalt: values.targetSaltLevel,
@@ -392,7 +407,12 @@ const waterBalanceStepsHTML = renderWaterBalanceSteps({
 // ... previous code remains the same
 
 resultsDiv.innerHTML = `
-<h2>Results</h2>
+<h2>Full Details</h2>
+<details class="water-balance-details" open>
+  <summary><strong>What Should I Add to the Pool Today ?</strong></summary>
+    ${todayDosageCardsHTML}
+  </div>
+</details>
 <details class="water-balance-details" open>
   <summary><strong>Is My Pool Balanced ?</strong></summary>
   <h2>LSI Scale</h2>
@@ -409,66 +429,66 @@ resultsDiv.innerHTML = `
   </div>
 </details>
 <details class="compliance-summary-details" open>
-  <summary><strong>Summary of Compliance With State Code</strong></summary>
+  <summary><strong>Is the Pool Compliant With State Code ?</strong></summary>
   <div class="compliance-summary-table-wrap">
     <div class="state-name"><strong>State:</strong> ${selectedState}</div>
     <table class="compliance-summary-table">
-      <thead>
-        <tr>
-          <th>Parameter</th>
-          <th>Current</th>
-          <th>Min</th>
-          <th>Max</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${[
-          {
-            label: "Free Chlorine",
-            current: values.freeChlorine,
-            min: standards.freeChlorine.min,
-            max: standards.freeChlorine.max,
-            inRange: values.freeChlorine >= standards.freeChlorine.min && values.freeChlorine <= standards.freeChlorine.max
-          },
-          {
-            label: "pH",
-            current: values.ph,
-            min: standards.pH.min,
-            max: standards.pH.max,
-            inRange: values.ph >= standards.pH.min && values.ph <= standards.pH.max
-          },
-          {
-            label: "Alkalinity",
-            current: values.alkalinity,
-            min: standards.alkalinity.min,
-            max: standards.alkalinity.max,
-            inRange: values.alkalinity >= standards.alkalinity.min && values.alkalinity <= standards.alkalinity.max
-          },
-          {
-            label: "Cyanuric Acid",
-            current: values.cya,
-            min: standards.cya.min,
-            max: standards.cya.max,
-            inRange: values.cya >= standards.cya.min && values.cya <= standards.cya.max
-          },
-          {
-            label: "Calcium Hardness",
-            current: values.calcium,
-            min: standards.calcium.min,
-            max: standards.calcium.max,
-            inRange: values.calcium >= standards.calcium.min && values.calcium <= standards.calcium.max
-          }
-        ].map(row => `
-          <tr class="${row.inRange ? 'compliant' : 'noncompliant'}">
-            <td>${row.label}</td>
-            <td>${row.current}</td>
-            <td>${row.min}</td>
-            <td>${row.max}</td>
-            <td>${row.inRange ? '<span class="status-ok">&#10003;</span>' : '<span class="status-bad">&#10007;</span>'}</td>
-          </tr>
-        `).join('')}
-      </tbody>
+    <thead>
+    <tr>
+    <th>Parameter</th>
+    <th>Current</th>
+    <th>Min</th>
+    <th>Max</th>
+    <th>Status</th>
+    </tr>
+    </thead>
+    <tbody>
+    ${[
+    {
+    label: "Free Chlorine",
+    current: values.freeChlorine,
+    min: standards.freeChlorine.min,
+    max: standards.freeChlorine.max,
+    inRange: values.freeChlorine >= standards.freeChlorine.min && values.freeChlorine <= standards.freeChlorine.max
+    },
+    {
+    label: "pH",
+    current: values.ph,
+    min: standards.pH.min,
+    max: standards.pH.max,
+    inRange: values.ph >= standards.pH.min && values.ph <= standards.pH.max
+    },
+    {
+    label: "Alkalinity",
+    current: values.alkalinity,
+    min: standards.alkalinity.min,
+    max: standards.alkalinity.max,
+    inRange: values.alkalinity >= standards.alkalinity.min && values.alkalinity <= standards.alkalinity.max
+    },
+    {
+    label: "Cyanuric Acid",
+    current: values.cya,
+    min: standards.cya.min,
+    max: standards.cya.max,
+    inRange: values.cya >= standards.cya.min && values.cya <= standards.cya.max
+    },
+    {
+    label: "Calcium Hardness",
+    current: values.calcium,
+    min: standards.calcium.min,
+    max: standards.calcium.max,
+    inRange: values.calcium >= standards.calcium.min && values.calcium <= standards.calcium.max
+    }
+    ].map(row => `
+    <tr class="${row.inRange ? 'compliant' : 'noncompliant'}">
+    <td>${row.label}</td>
+    <td>${row.current}</td>
+    <td>${row.min}</td>
+    <td>${row.max}</td>
+    <td>${row.inRange ? '<span class="status-ok">&#10003;</span>' : '<span class="status-bad">&#10007;</span>'}</td>
+    </tr>
+    `).join('')}
+    </tbody>
     </table>
     ${warnings.length > 0 ? `<ul class="compliance-warnings">${warnings.map(w => `<li>⚠️ ${w}</li>`).join('')}</ul>` : ''}
   </div>
@@ -483,7 +503,7 @@ resultsDiv.innerHTML = `
   </div>
 </details>
 <details class="sanitizer-details" open>
-  <summary><strong>Sanitizer & Stabilizer Detail</strong></summary>
+  <summary><strong>Chlorine & Stabilizer Detail</strong></summary>
   <div class="sanitizer-parameter-charts">
     ${ChlorineScaleDisplayHTML}
     ${CyaDisplayHTML}
@@ -497,4 +517,4 @@ resultsDiv.innerHTML = `
   </div>
 </details>
 `;
-        });
+});

@@ -32,7 +32,7 @@ export function renderWaterBalanceSteps({ poolType, poolVolume, current, targets
   const planSummary = outOfRangeSteps.length
     ? `<div class="water-balance-plan-summary" style="margin-bottom:1em;">
         <strong>Water Balance Plan Summary:</strong><br>
-        Adjust the following parameters in order, one per day:<br>
+        Adjust the following parameters in this order, one per day:<br>
         <ol>
           ${outOfRangeSteps.map((step, idx) =>
             `<li>Day ${idx + 1}: <span class="${PARAM_COLORS[step.key]}">${step.parameter}</span></li>`
@@ -89,7 +89,7 @@ export function renderWaterBalanceSteps({ poolType, poolVolume, current, targets
         </div>
       ` : ''}
       <div style="margin-top:0.7em;font-size:0.98em;color:#757575;">
-        <em>Adjust chemicals in the order shown above for best results.</em>
+        <em>Adjust chemicals in the order shown above for best results.  Adjust one parameter per day, preferably before the pool opens or right after it closes.</em>
       </div>
     </div>
   `;

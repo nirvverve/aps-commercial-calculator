@@ -20,11 +20,11 @@ export function getBreakpointChlorination({
 
   let recommendation = '';
   if (combinedChlorine >= 1.6) {
-    recommendation = 'Immediate breakpoint chlorination (shock) is recommended.  Dosing at night after the pool closes for the day will be the most effective.  Be sure to backwash right before shocking the pool and again before reopening.  Free chlorine level must be below the state maximum before reopening to swimmers.';
+    recommendation = 'YES - Immediate breakpoint chlorination (shocking) is recommended because combined chlorine exceeds 1.6 ppm.  Dosing at night after the pool closes for the day will be the most effective.  Be sure to backwash right before shocking the pool and again before reopening.  Free chlorine level must be below the state maximum before reopening to swimmers.';
   } else if (combinedChlorine >= 0.6) {
-    recommendation = 'Breakpoint chlorination (shock) should be performed within 72 hours right after pool closes for the day. Be sure to backwash right before shocking the pool and again before reopening.  Free chlorine level must be below the state maximum before reopening to swimmers.';
+    recommendation = 'YES - Breakpoint chlorination (shock) should be performed within 72 hours right after pool closes for the day, as combined chlorine exceeds 0.6 ppm. Be sure to backwash right before shocking the pool and again before reopening.  Free chlorine level must be below the state maximum before reopening to swimmers.';
   } else {
-    recommendation = 'The pool does not need to be brought to breakpoint (aka shocked) this week.';
+    recommendation = 'NO - The pool does not need to be brought to breakpoint (aka shocked) this week.';
   }
 
   let doseLbs = 0, doseText = '';
