@@ -107,20 +107,23 @@ function sodaAshDose(current, target, gallons, alkalinity) {
   }
 }
 
+// ... rest of code remains same
+
 function acidDoseForAlk(currentAlk, targetAlk, gallons) {
   if (currentAlk <= targetAlk) return null;
   const ppmDrop = currentAlk - targetAlk;
-  // 1.6 qt per 10,000 gal lowers TA by 10 ppm
-  const quarts = (ppmDrop / 10) * 1.6 * (gallons / 10000);
-  const gallonsAcid = quarts / 4;
-  const flOz = quarts * 32;
+  // Orenda: 0.2 gal per 10,000 gal per 10 ppm drop (31.45% muriatic acid)
+  const gallonsAcid = (ppmDrop / 10) * 0.2 * (gallons / 10000);
+  const flOz = gallonsAcid * 128;
   if (gallonsAcid < 0.01) return null;
   if (gallonsAcid < 1) {
-    return `${flOz.toFixed(1)} fl oz muriatic acid`;
+    return `${flOz.toFixed(1)} fl oz muriatic acid.`;
   } else {
-    return `${gallonsAcid.toFixed(2)} gal (${flOz.toFixed(1)} fl oz) muriatic acid`;
+    return `${gallonsAcid.toFixed(2)} gal (${flOz.toFixed(1)} fl oz) muriatic acid.`;
   }
 }
+
+// ... rest of code remains same
 
 function splitAcidDose(totalDose, days) {
   if (!totalDose) return null;
@@ -152,26 +155,26 @@ function getWaterBalanceSteps({
    const superHighCa = current.calcium > 600;
    const highCa = current.calcium > 400;
    // Calculate LSI for current water
-   const lsi = (() => {
-     // Defensive: use a simple LSI formula for this context
-     const alkFactor = Math.log10(Math.max(current.alkalinity, 1));
-     const calFactor = Math.log10(Math.max(current.calcium, 1));
-     const tempFactor = Math.log10(Math.max(tempF, 1));
-     const tdsFactor = Math.log10(Math.max(tds, 1));
-     return current.ph + calFactor + alkFactor + tempFactor - tdsFactor;
-   })();
+   const lsi = advancedLSI({
+    ph: current.ph,
+    tempF: tempF,
+    calcium: current.calcium,
+    alkalinity: current.alkalinity,
+    cya: current.cya !== undefined ? current.cya : 0,
+    tds: tds !== undefined ? tds : 1000
+   });
  
    // If super high alk and not super high calcium, prioritize alk
    if (superHighAlk && current.calcium < 500) {
      // Calculate total acid needed to bring alk to 120
-     const totalAcidDose = acidDoseForAlk(current.alkalinity, 120, poolVolume);
+     const totalAcidDose = acidDoseForAlk(current.alkalinity, 100, poolVolume);
      // Split over 3 days
      const perDayDose = splitAcidDose(totalAcidDose, 3);
      steps.push({
        key: 'alkalinity',
        parameter: 'Total Alkalinity',
        current: current.alkalinity,
-       target: 120,
+       target: 100,
        dose: perDayDose,
        note: 'Alkalinity is extremely high. Lower alkalinity in stages over 3 days before adjusting other parameters.'
      });
@@ -187,9 +190,12 @@ function getWaterBalanceSteps({
    }
  
    // If LSI > 0.5, show warning and prioritize alk/pH
-   if (lsi > 0.5) {
-     notes.push('LSI is in extreme scaling condition (>0.5). Prioritize lowering alkalinity and pH.');
-   }
+   if (
+    lsi > 0.5 &&
+    ((current.alkalinity > t.alkalinity) || (current.ph > t.ph))
+  ) {
+    notes.push('LSI is in extreme scaling condition (>0.5). Prioritize lowering alkalinity and pH.');
+  }
 
   // --- Alkalinity Step ---
   let alkDose = alkalinityDose(current.alkalinity, t.alkalinity, poolVolume);
@@ -330,7 +336,8 @@ function renderTodayDosageCards({
     function formatCumulativeEffect(step) {
       let effect = '';
       if (step.key === 'alkalinity' && step.dose) {
-        effect = `to raise alkalinity from ${step.current} ppm to ${step.target} ppm.`;
+        const direction = step.target > step.current ? 'raise' : 'lower';
+        effect = `to ${direction} alkalinity from ${step.current} ppm to ${step.target} ppm.`;
       } else if (step.key === 'calcium' && step.dose) {
         effect = `to raise calcium hardness from ${step.current} ppm to ${step.target} ppm.`;
       } else if (step.key === 'cya' && step.dose) {
