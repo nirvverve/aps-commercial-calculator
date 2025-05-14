@@ -8,9 +8,9 @@ import { formatChlorineDose } from './ChlorineDoseUtils.js';
 import { renderChlorineScaleDisplay } from './ChlorineScaleDisplay.js';
 import { renderLSIScale, renderLSIComponentsTable } from './LsiDisplay.js';
 import { renderWaterBalanceSteps } from './WaterBalanceDisplay.js';
-import { renderBreakpointChlorination } from './BreakpointChlorinationDisplay.js';
 import { getSaltDose } from './SaltDoseUtils.js';
 import { renderTodayDosageCards } from './WaterBalanceUtils.js';
+import { renderBreakpointChlorination } from './BreakpointChlorinationDisplay.js';
 export { advancedLSI };
 
 // --- State and Pool Type Buttons ---
@@ -186,7 +186,7 @@ function getWarnings(values, standards) {
 
 // --- Dose Visualization Table ---
 function renderChlorineDoseTable({currentFC, poolVolume, chlorineType, minFC, maxFC, increment}) {
-  let html = `<h3>Chlorine Dose Table</h3>
+  let html = `<h3>Manual Chlorine Addition Guide</h3>
     <table class="dose-table">
     <thead>
     <tr>
@@ -311,7 +311,12 @@ document.getElementById('poolForm').addEventListener('submit', function(e) {
     maxFC,
     increment: 0.5
   });
-
+  const BreakpointChlorinationHTML = renderBreakpointChlorination({
+    freeChlorine: values.freeChlorine,
+    totalChlorine: values.totalChlorine,
+    poolVolume: values.poolVolume,
+    chlorineType: selectedChlorineType
+  });
   // --- Alkalinity and Calcium Hardness Displays ---
   const todayDosageCardsHTML = renderTodayDosageCards({
     poolType: selectedPoolType,
@@ -325,7 +330,9 @@ document.getElementById('poolForm').addEventListener('submit', function(e) {
     tempF: values.temperature,
     tds: values.tds,
     freeChlorine: values.freeChlorine,
-    totalChlorine: values.totalChlorine
+    totalChlorine: values.totalChlorine,
+    doseTableHTML,
+    BreakpointChlorinationHTML
   });
   const saltDoseResult = getSaltDose({
     currentSalt: values.saltLevel,
@@ -338,12 +345,6 @@ document.getElementById('poolForm').addEventListener('submit', function(e) {
     <p>${saltDoseResult.display}</p>
   </div>
 `;
-  const BreakpointChlorinationHTML = renderBreakpointChlorination({
-    freeChlorine: values.freeChlorine,
-    totalChlorine: values.totalChlorine,
-    poolVolume: values.poolVolume,
-    chlorineType: selectedChlorineType
-  });
   const alkDisplayHTML = renderAlkalinityDisplay({
     state: selectedState,
     poolType: selectedPoolType,
@@ -408,26 +409,7 @@ const waterBalanceStepsHTML = renderWaterBalanceSteps({
 
 resultsDiv.innerHTML = `
 <h2>Full Details</h2>
-<details class="water-balance-details" open>
-  <summary><strong>What Should I Add to the Pool Today ?</strong></summary>
     ${todayDosageCardsHTML}
-  </div>
-</details>
-<details class="water-balance-details" open>
-  <summary><strong>Is My Pool Balanced ?</strong></summary>
-  <h2>LSI Scale</h2>
-  <div class="water-balance-charts">
-    ${LSIScaleHTML}
-    ${LSIComponentsTableHTML}
-    ${waterBalanceStepsHTML}
-  </div>
-</details>
-<details class="sanitizer-details" open>
-  <summary><strong>Does My Pool Need To Be Shocked ?</strong></summary>
-  <div class="sanitizer-parameter-charts">
-    ${BreakpointChlorinationHTML}
-  </div>
-</details>
 <details class="compliance-summary-details" open>
   <summary><strong>Is the Pool Compliant With State Code ?</strong></summary>
   <div class="compliance-summary-table-wrap">
@@ -491,6 +473,21 @@ resultsDiv.innerHTML = `
     </tbody>
     </table>
     ${warnings.length > 0 ? `<ul class="compliance-warnings">${warnings.map(w => `<li>⚠️ ${w}</li>`).join('')}</ul>` : ''}
+  </div>
+</details>
+<details class="water-balance-details" open>
+  <summary><strong>Is My Pool Balanced ?</strong></summary>
+  <h2>LSI Scale</h2>
+  <div class="water-balance-charts">
+    ${LSIScaleHTML}
+    ${LSIComponentsTableHTML}
+    ${waterBalanceStepsHTML}
+  </div>
+</details>
+<details class="sanitizer-details" open>
+  <summary><strong>Does My Pool Need To Be Shocked ?</strong></summary>
+  <div class="sanitizer-parameter-charts">
+    ${BreakpointChlorinationHTML}
   </div>
 </details>
 <details class="water-balance-details" open>

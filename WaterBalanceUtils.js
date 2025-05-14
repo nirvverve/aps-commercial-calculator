@@ -1,3 +1,6 @@
+import { goldenNumbers } from './config.js';
+import { advancedLSI } from './script.js';
+
 // Color classes for each parameter
 const PARAM_COLORS = {
   cya: 'cya-purple',
@@ -62,11 +65,26 @@ function cyaDose(current, target, gallons) {
 
 // Acid dose to lower pH
 function acidDose(current, target, gallons, alkalinity) {
-  if (current <= target) return null;
+  // if (current <= target) return null;
   // PoolFactor and AlkFactor are simplified for demo purposes
-  const poolFactor = 76 * (gallons / 10000);
-  const alkFactor = alkalinity / 100;
-  const acidFlOz = (current - target) * poolFactor * alkFactor;
+  //const poolFactor = 76 * (gallons / 10000);
+  //const alkFactor = alkalinity / 100;
+  //const acidFlOz = (current - target) * poolFactor * alkFactor;
+  //if (acidFlOz <= 0) return null;
+  //if (acidFlOz < 128) {
+  // return `${acidFlOz.toFixed(1)} fl oz muriatic acid`;
+  // } else {
+  //  return `${(acidFlOz / 128).toFixed(2)} gal (${acidFlOz.toFixed(1)} fl oz) muriatic acid`;
+ // }
+//
+return acidDoseToLowerPh(current, target, gallons, alkalinity);
+}
+
+function acidDoseToLowerPh(currentPh, targetPh, gallons, alkalinity) {
+  if (currentPh <= targetPh) return null;
+  const pHdrop = currentPh - targetPh;
+  // 1.3 fl oz per 0.1 pH drop per 10,000 gal at TA 100
+  const acidFlOz = 1.3 * (alkalinity / 100) * (pHdrop / 0.1) * (gallons / 10000);
   if (acidFlOz <= 0) return null;
   if (acidFlOz < 128) {
     return `${acidFlOz.toFixed(1)} fl oz muriatic acid (31.45%)`;
@@ -89,6 +107,25 @@ function sodaAshDose(current, target, gallons, alkalinity) {
   }
 }
 
+function acidDoseForAlk(currentAlk, targetAlk, gallons) {
+  if (currentAlk <= targetAlk) return null;
+  const ppmDrop = currentAlk - targetAlk;
+  // 1.6 qt per 10,000 gal lowers TA by 10 ppm
+  const quarts = (ppmDrop / 10) * 1.6 * (gallons / 10000);
+  const gallonsAcid = quarts / 4;
+  const flOz = quarts * 32;
+  if (gallonsAcid < 0.01) return null;
+  if (gallonsAcid < 1) {
+    return `${flOz.toFixed(1)} fl oz muriatic acid`;
+  } else {
+    return `${gallonsAcid.toFixed(2)} gal (${flOz.toFixed(1)} fl oz) muriatic acid`;
+  }
+}
+
+function splitAcidDose(totalDose, days) {
+  if (!totalDose) return null;
+  return `Add 1/${days} of total dose (${totalDose}) per day for ${days} days`;
+}
 // --- Main Water Balance Steps Function ---
 
 /**
@@ -104,21 +141,62 @@ function getWaterBalanceSteps({
   tds = 1000
 }) {
   // Example golden numbers (replace with your config.js import if needed)
-  const goldenNumbers = {
-    pool: { cya: 30, alkalinity: 100, calcium: 300, ph: 7.5 },
-    spa: { cya: 30, alkalinity: 100, calcium: 150, ph: 7.5 }
-  };
   let t = { ...goldenNumbers[poolType], ...targets };
   let notes = [];
 
   // Order: Alkalinity, Calcium, CYA, pH
   const steps = [];
 
+   // --- Super High Alkalinity/Calcium Logic ---
+   const superHighAlk = current.alkalinity > 180;
+   const superHighCa = current.calcium > 600;
+   const highCa = current.calcium > 400;
+   // Calculate LSI for current water
+   const lsi = (() => {
+     // Defensive: use a simple LSI formula for this context
+     const alkFactor = Math.log10(Math.max(current.alkalinity, 1));
+     const calFactor = Math.log10(Math.max(current.calcium, 1));
+     const tempFactor = Math.log10(Math.max(tempF, 1));
+     const tdsFactor = Math.log10(Math.max(tds, 1));
+     return current.ph + calFactor + alkFactor + tempFactor - tdsFactor;
+   })();
+ 
+   // If super high alk and not super high calcium, prioritize alk
+   if (superHighAlk && current.calcium < 500) {
+     // Calculate total acid needed to bring alk to 120
+     const totalAcidDose = acidDoseForAlk(current.alkalinity, 120, poolVolume);
+     // Split over 3 days
+     const perDayDose = splitAcidDose(totalAcidDose, 3);
+     steps.push({
+       key: 'alkalinity',
+       parameter: 'Total Alkalinity',
+       current: current.alkalinity,
+       target: 120,
+       dose: perDayDose,
+       note: 'Alkalinity is extremely high. Lower alkalinity in stages over 3 days before adjusting other parameters.'
+     });
+     notes.push('Alkalinity is extremely high. Lower alkalinity in stages over 3 days before adjusting other parameters.');
+     // Defer all other adjustments
+     return { steps, notes };
+   }
+ 
+   // If super high calcium, lower pH target for LSI
+   if (superHighCa || (superHighAlk && highCa)) {
+     t.ph = 7.2; // or 7.3, based on your preference
+     notes.push('Calcium is extremely high. Lower pH target to 7.2 for LSI balance.');
+   }
+ 
+   // If LSI > 0.5, show warning and prioritize alk/pH
+   if (lsi > 0.5) {
+     notes.push('LSI is in extreme scaling condition (>0.5). Prioritize lowering alkalinity and pH.');
+   }
+
   // --- Alkalinity Step ---
   let alkDose = alkalinityDose(current.alkalinity, t.alkalinity, poolVolume);
   let anticipatedPh = current.ph;
   let anticipatedPhNote = null;
   let anticipatedAcidDose = null;
+  let anticipatedSodaAshDoseAfterAlk = null;
 
   if (alkDose) {
     // Calculate anticipated pH rise from sodium bicarbonate
@@ -135,6 +213,11 @@ function getWaterBalanceSteps({
       anticipatedPhNote = `Note: Adding sodium bicarbonate to raise alkalinity by ${alkIncrease} ppm is expected to raise pH from ${current.ph} to approximately ${anticipatedPh}.`;
       notes.push(anticipatedPhNote);
     }
+
+    // If anticipated pH is below target, recommend soda ash dose
+    if (anticipatedPh < t.ph) {
+      anticipatedSodaAshDoseAfterAlk = sodaAshDose(anticipatedPh, t.ph, poolVolume, t.alkalinity);
+    }
   }
 
   steps.push({
@@ -144,7 +227,8 @@ function getWaterBalanceSteps({
     target: t.alkalinity,
     dose: alkDose,
     anticipatedPh: alkDose ? anticipatedPh : null,
-    anticipatedAcidDose: anticipatedAcidDose
+    anticipatedAcidDose: anticipatedAcidDose,
+    anticipatedSodaAshDoseAfterAlk
   });
 
   // --- Calcium Hardness Step ---
@@ -208,7 +292,6 @@ function getWaterBalanceSteps({
 }
 
 // --- Display Functions ---
-
 function renderTodayDosageCards({
   poolType,
   poolVolume,
@@ -217,17 +300,213 @@ function renderTodayDosageCards({
   tempF = 77,
   tds = 1000,
   freeChlorine,
-  totalChlorine
+  totalChlorine,
+  chlorineType,
+  doseTableHTML,
+  BreakpointChlorinationHTML
 }) {
   const { steps, notes } = getWaterBalanceSteps({ poolType, poolVolume, current, targets, tempF, tds });
 
-  // Find the first parameter that needs adjustment (priority order)
-  const firstStep = steps.find(step =>
-    (step.current < step.target || step.current > step.target) && step.dose
+  // --- Water Balance Section ---
+  // Find the first water balance step that needs adjustment (alkalinity, cya, calcium)
+  const firstWaterBalanceStep = steps.find(
+    step => (step.current < step.target || step.current > step.target) && step.dose &&
+    (['alkalinity', 'cya', 'calcium'].includes(step.key))
   );
+  // Find all other water balance steps that need adjustment (excluding the first)
+  const otherWaterBalanceSteps = steps.filter(
+    step =>
+      (step.current < step.target || step.current > step.target) &&
+      step.dose &&
+      (['alkalinity', 'cya', 'calcium'].includes(step.key)) &&
+      step !== firstWaterBalanceStep
+  );
+  // Find the pH step that needs adjustment
+  const phStep = steps.find(step => step.key === 'ph' && step.dose);
+
+  // Water Balance Cards
+  let waterBalanceCards = '';
+  if (firstWaterBalanceStep) {
+    function formatCumulativeEffect(step) {
+      let effect = '';
+      if (step.key === 'alkalinity' && step.dose) {
+        effect = `to raise alkalinity from ${step.current} ppm to ${step.target} ppm.`;
+      } else if (step.key === 'calcium' && step.dose) {
+        effect = `to raise calcium hardness from ${step.current} ppm to ${step.target} ppm.`;
+      } else if (step.key === 'cya' && step.dose) {
+        effect = `to raise cyanuric acid from ${step.current} ppm to ${step.target} ppm.`;
+      }
+      return effect ? ` ${effect}` : '';
+    }
+    waterBalanceCards = `
+      <div class="${PARAM_CARD_CLASS[firstWaterBalanceStep.key] || 'chem-card'}">
+        <strong>${firstWaterBalanceStep.parameter}:</strong>
+        <div style="margin:0.5em 0 0.2em 0;">
+          ${firstWaterBalanceStep.dose}
+          ${formatCumulativeEffect(firstWaterBalanceStep)}
+        </div>
+      </div>
+    `;
+  }
+
+  // pH Adjustment Cards
+  let pHAdjustmentCards = '';
+  if (firstWaterBalanceStep) {
+    // Acid after alkalinity
+    if (firstWaterBalanceStep.key === 'alkalinity' && firstWaterBalanceStep.anticipatedAcidDose) {
+      const anticipatedPh = firstWaterBalanceStep.anticipatedPh;
+      pHAdjustmentCards += `
+        <div class="${PARAM_CARD_CLASS['acid']}">
+          <strong>pH Adjustment (Acid):</strong>
+          <div style="margin:0.5em 0 0.2em 0;">
+            ${firstWaterBalanceStep.anticipatedAcidDose}
+            to lower pH from ${anticipatedPh} to ${steps.find(s => s.key === 'ph').target}.
+          </div>
+          <div style="font-style:italic; color:#b71c1c; margin-top:0.5em;">
+            Wait 15 - 30 minutes to adjust pH after adding sodium bicarbonate.
+          </div>
+        </div>
+      `;
+    }
+    // Soda ash after alkalinity
+    if (firstWaterBalanceStep.key === 'alkalinity' && firstWaterBalanceStep.anticipatedSodaAshDoseAfterAlk) {
+      const anticipatedPh = firstWaterBalanceStep.anticipatedPh;
+      pHAdjustmentCards += `
+        <div class="${PARAM_CARD_CLASS['sodaash']}">
+          <strong>pH Adjustment (Soda Ash):</strong>
+          <div style="margin:0.5em 0 0.2em 0;">
+            ${firstWaterBalanceStep.anticipatedSodaAshDoseAfterAlk}
+            to raise pH from ${anticipatedPh} to ${steps.find(s => s.key === 'ph').target}.
+          </div>
+          <div style="font-style:italic; color:#b71c1c; margin-top:0.5em;">
+            Wait 15 - 30 minutes before adjusting pH after adding sodium bicarbonate.
+          </div>
+        </div>
+      `;
+    }
+    // Acid/soda ash after calcium
+    if (firstWaterBalanceStep.key === 'calcium') {
+      if (phStep && phStep.dose && phStep.current > phStep.target) {
+        pHAdjustmentCards += `
+          <div class="${PARAM_CARD_CLASS['acid']}">
+            <strong>pH Adjustment (Acid):</strong>
+            <div style="margin:0.5em 0 0.2em 0;">
+              ${phStep.dose}
+              to lower pH from ${phStep.current} to ${phStep.target}.
+            </div>
+            <div style="font-style:italic; color:#b71c1c; margin-top:0.5em;">
+              Wait 15 - 30 minutes before adjusting pH after adding calcium chloride.
+            </div>
+          </div>
+        `;
+      }
+      if (phStep && phStep.dose && phStep.current < phStep.target) {
+        pHAdjustmentCards += `
+          <div class="${PARAM_CARD_CLASS['sodaash']}">
+            <strong>pH Adjustment (Soda Ash):</strong>
+            <div style="margin:0.5em 0 0.2em 0;">
+              ${phStep.dose}
+              to raise pH from ${phStep.current} to ${phStep.target}.
+            </div>
+            <div style="font-style:italic; color:#b71c1c; margin-top:0.5em;">
+              Wait 15 - 30 minutes before adjusting pH after adding calcium chloride.
+            </div>
+          </div>
+        `;
+      }
+    }
+    // Soda ash after CYA
+    if (firstWaterBalanceStep.key === 'cya' && firstWaterBalanceStep.anticipatedSodaAshDose) {
+      const anticipatedPh = firstWaterBalanceStep.anticipatedPh;
+      pHAdjustmentCards += `
+        <div class="${PARAM_CARD_CLASS['sodaash']}">
+          <strong>pH Adjustment (Soda Ash):</strong>
+          <div style="margin:0.5em 0 0.2em 0;">
+            ${firstWaterBalanceStep.anticipatedSodaAshDose}
+            to raise pH from ${anticipatedPh} to ${steps.find(s => s.key === 'ph').target}.
+          </div>
+          <div style="font-style:italic; color:#b71c1c; margin-top:0.5em;">
+            Wait 15 - 30 minutes before adjusting pH after adding cyanuric acid.
+          </div>
+        </div>
+      `;
+    }
+  }
+  // pH adjustment card if only pH is out of range
+  if (!firstWaterBalanceStep && phStep) {
+    // Acid dose
+    if (phStep.dose && phStep.current > phStep.target) {
+      pHAdjustmentCards += `
+        <div class="${PARAM_CARD_CLASS['acid']}">
+          <strong>pH Adjustment (Acid):</strong>
+          <div style="margin:0.5em 0 0.2em 0;">
+            ${phStep.dose}
+            to lower pH from ${phStep.current} to ${phStep.target}.
+          </div>
+        </div>
+      `;
+    }
+    // Soda ash dose
+    if (phStep.dose && phStep.current < phStep.target) {
+      pHAdjustmentCards += `
+        <div class="${PARAM_CARD_CLASS['sodaash']}">
+          <strong>pH Adjustment (Soda Ash):</strong>
+          <div style="margin:0.5em 0 0.2em 0;">
+            ${phStep.dose}
+            to raise pH from ${phStep.current} to ${phStep.target}.
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // Note for other parameters
+  let otherParamsNote = '';
+  if (otherWaterBalanceSteps.length > 0) {
+    const paramNames = otherWaterBalanceSteps.map(step => step.parameter).join(', ');
+    otherParamsNote = `
+      <div style="margin-top:1em;">
+        <em>Other parameters (${paramNames}) should be adjusted in subsequent visits. See "Is My Pool Balanced?" for more detail.</em>
+      </div>
+    `;
+  }
+
+  // --- Manual Chlorine Dosing / Shocking Section ---
+  // Show the chlorine dose table and Breakpoint card (with dose written out)
+  let manualChlorineSection = '';
+  const combinedChlorine = typeof totalChlorine === 'number' && typeof freeChlorine === 'number'
+    ? totalChlorine - freeChlorine
+    : 0;
+
+  if (doseTableHTML || BreakpointChlorinationHTML) {
+    let BreakpointDoseText = '';
+    if (BreakpointChlorinationHTML) {
+      const match = BreakpointChlorinationHTML.match(/<span class="breakpoint-dose">([^<]+)<\/span>/);
+      if (match) {
+        BreakpointDoseText = match[1];
+      }
+    }
+    manualChlorineSection = `
+      <div class="manual-chlorine-section">
+        <h4>Manual Chlorine Dosing / Shocking</h4>
+        ${doseTableHTML ? `<div class="chlorine-dose-table">${doseTableHTML}</div>` : ''}
+        ${
+          (combinedChlorine > 0.6 && BreakpointChlorinationHTML) ? `
+          <div class="chem-card fac" style="background:#fffde7;">
+            <strong>Shock Needed:</strong>
+            <div style="margin:0.5em 0 0.2em 0;">
+              Combined chlorine is above 0.6 ppm.${BreakpointDoseText ? ` Add <strong>${BreakpointDoseText}</strong> to achieve breakpoint chlorination.` : ''}<br>
+              <em>Consult "Does My Pool Need To Be Shocked?" for details.</em>
+            </div>
+          </div>
+        ` : ''
+        }
+      </div>
+    `;
+  }
 
   // If nothing to add, show a message
-  if (!firstStep) {
+  if (!firstWaterBalanceStep && !phStep && !manualChlorineSection) {
     return `
       <details class="today-dosage-details" open>
         <summary><strong>What Should I Add to the Pool Today?</strong></summary>
@@ -238,86 +517,38 @@ function renderTodayDosageCards({
     `;
   }
 
-  // Build the card(s) for today's additions
-  let cardsHTML = '';
-  // Main parameter card
-  cardsHTML += `
-    <div class="${PARAM_CARD_CLASS[firstStep.key] || 'chem-card'}">
-      <strong>${firstStep.parameter}:</strong>
-      <div style="margin:0.5em 0 0.2em 0;">
-        ${firstStep.dose}
-      </div>
-      ${firstStep.anticipatedAcidDose ? `
-        <div class="${PARAM_CARD_CLASS['acid']}">
-          <strong>pH Adjustment (Acid):</strong>
-          <div style="margin:0.5em 0 0.2em 0;">
-            ${firstStep.anticipatedAcidDose}
-          </div>
-        </div>
-      ` : ''}
-      ${firstStep.anticipatedSodaAshDose ? `
-        <div class="${PARAM_CARD_CLASS['sodaash']}">
-          <strong>pH Adjustment (Soda Ash):</strong>
-          <div style="margin:0.5em 0 0.2em 0;">
-            ${firstStep.anticipatedSodaAshDose}
-          </div>
-        </div>
-      ` : ''}
-    </div>
-  `;
-
-  // If the pool needs to be shocked (combined chlorine > 0.6), add a card/note
-  let shockNote = '';
-  if (
-    typeof freeChlorine === 'number' &&
-    typeof totalChlorine === 'number' &&
-    totalChlorine - freeChlorine > 0.6
-  ) {
-    shockNote = `
-      <div class="chem-card fac" style="background:#fffde7;">
-        <strong>Shock Needed:</strong>
-        <div style="margin:0.5em 0 0.2em 0;">
-          Combined chlorine is above 0.6 ppm.<br>
-          <em>Consult "Does My Pool Need To Be Shocked?" for details.</em>
-        </div>
-      </div>
-    `;
-  }
-
-  // Note for other parameters
-  const otherParams = steps.filter(
-    (step, idx) =>
-      idx !== steps.indexOf(firstStep) &&
-      (step.current < step.target || step.current > step.target) &&
-      step.dose
-  );
-  let otherParamsNote = '';
-  if (otherParams.length > 0) {
-    otherParamsNote = `
-      <div style="margin-top:1em;">
-        <em>Other parameters should be adjusted in subsequent visits. See "Is My Pool Balanced?" for more detail.</em>
-      </div>
-    `;
-  }
-
   return `
     <details class="today-dosage-details" open>
       <summary><strong>What Should I Add to the Pool Today?</strong></summary>
       <div style="margin:1em 0;">
-        ${cardsHTML}
-        ${shockNote}
+        <h4>Water Balance:</h4>
+        ${waterBalanceCards}
+        ${pHAdjustmentCards}
         ${otherParamsNote}
+        ${manualChlorineSection}
       </div>
     </details>
   `;
 }
 
-function renderWaterBalanceSteps({ poolType, poolVolume, current, targets = {}, tempF = 77, tds = 1000, freeChlorine, totalChlorine }) {
+function renderWaterBalanceSteps({ poolType, poolVolume, current, targets = {}, tempF = 77, tds = 1000 }) {
   const { steps, notes } = getWaterBalanceSteps({ poolType, poolVolume, current, targets, tempF, tds });
 
+  // Color classes for table rows
+  const PARAM_COLORS = {
+    cya: 'cya-purple',
+    alkalinity: 'alk-green',
+    calcium: 'calcium-blue',
+    ph: 'ph-red'
+  };
+
+  // Only include water balance steps for alkalinity, calcium, and cya (exclude pH)
+  const filteredSteps = steps.filter(step =>
+    ['alkalinity', 'calcium', 'cya'].includes(step.key)
+  );
+
   // Determine which parameters are out of range for the summary
-  const outOfRangeSteps = steps.filter(step => {
-    if (step.key === 'ph') return step.current !== step.target;
+  const outOfRangeSteps = filteredSteps.filter(step => {
     return step.current < step.target || step.current > step.target;
   });
 
@@ -336,7 +567,7 @@ function renderWaterBalanceSteps({ poolType, poolVolume, current, targets = {}, 
     <strong>Water Balance Plan Summary:</strong> All parameters are within target range.
     </div>`;
 
-  // Table with color classes
+  // Table with color classes, excluding pH
   return `
     <style>
     .cya-purple { color: #8e24aa; font-weight: bold; }
@@ -362,7 +593,7 @@ function renderWaterBalanceSteps({ poolType, poolVolume, current, targets = {}, 
     </tr>
     </thead>
     <tbody>
-    ${steps.map((step, idx) => `
+    ${filteredSteps.map((step, idx) => `
     <tr class="${PARAM_COLORS[step.key] || ''}">
     <td>${idx + 1}</td>
     <td><span class="${PARAM_COLORS[step.key] || ''}">${step.parameter}</span></td>
@@ -388,5 +619,4 @@ function renderWaterBalanceSteps({ poolType, poolVolume, current, targets = {}, 
   `;
 }
 
-// Export all main functions
 export { renderTodayDosageCards, renderWaterBalanceSteps, getWaterBalanceSteps };

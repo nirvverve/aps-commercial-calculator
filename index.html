@@ -46,15 +46,15 @@
       <h2>Balancing</h2>
       <div class="field field-ph">
         <label for="ph">pH:</label>
-        <input type="number" id="ph" name="ph" min="0" max="14" step="0.01" required>
+        <input type="number" id="ph" name="ph" min="6.5" max="8.5" step="0.1" required>
       </div>
       <div class="field field-alk">
         <label for="alkalinity">Total Alkalinity (ppm):</label>
-        <input type="number" id="alkalinity" name="alkalinity" min="0" step="1" required>
+        <input type="number" id="alkalinity" name="alkalinity" min="0" step="1" max="400" required>
       </div>
       <div class="field field-ch">
         <label for="calcium">Calcium Hardness (ppm):</label>
-        <input type="number" id="calcium" name="calcium" min="0" step="1" required>
+        <input type="number" id="calcium" name="calcium" min="0" step="1" max="1000" required>
       </div>
     </div>
 
@@ -63,11 +63,13 @@
       <h2>Salt Level</h2>
       <div class="field field-salt">
         <label for="saltLevel">Current Salt Level in Pool (ppm):</label>
-        <input type="number" id="saltLevel" name="saltLevel" min="0" step="1">
+        <input type="number" id="saltLevel" name="saltLevel" min="0" max="6000" step="1">
       </div>
       <div class="field field-salt">
         <label for="targetSaltLevel">Target Salt Level (ppm):</label>
         <select id="targetSaltLevel" name="targetSaltLevel">
+          <option value="0">0 ppm</option>
+          <option value="2800">2,800 ppm</option>
           <option value="3200">3,200 ppm</option>
           <option value="3400">3,400 ppm</option>
           <option value="3600">3,600 ppm</option>
@@ -83,11 +85,11 @@
       <h2>Other</h2>
       <div class="field field-temp">
         <label for="temperature">Temperature (°F):</label>
-        <input type="number" id="temperature" name="temperature" min="0" max="120" step="0.1">
+        <input type="number" id="temperature" name="temperature" min="50" max="110" step="0.1">
       </div>
       <div class="field field-tds">
         <label for="tds">TDS (Total Dissolved Solids, ppm):</label>
-        <input type="number" id="tds" name="tds" min="0" step="1">
+        <input type="number" id="tds" name="tds" min="0" max="10000" step="1">
       </div>
     </div>
 

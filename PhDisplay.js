@@ -199,10 +199,12 @@ export function renderPhDisplay({
     }
     .dose-list {
       margin: 0;
-      padding-left: 1.2em;
+      padding-left: 1.2em
+      line height: 1.2;
     }
     .dose-list li {
       margin-bottom: 2px;
+      line-height: 1.2;
     }
     @media (max-width: 600px) {
       .ph-results-row {

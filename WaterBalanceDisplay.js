@@ -69,7 +69,9 @@ export function renderWaterBalanceSteps({ poolType, poolVolume, current, targets
           </tr>
         </thead>
         <tbody>
-          ${steps.map((step, idx) => `
+        ${steps
+          .filter(step => ['alkalinity', 'calcium', 'cya'].includes(step.key))
+          .map((step, idx) => `
             <tr class="${PARAM_COLORS[step.key] || ''}">
               <td>${idx + 1}</td>
               <td><span class="${PARAM_COLORS[step.key] || ''}">${step.parameter}</span></td>

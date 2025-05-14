@@ -36,7 +36,7 @@ export function renderBreakpointChlorination({
         </tr>
         <tr>
           <th>Chlorine Dose Needed</th>
-          <td>${result.doseText || '-'}</td>
+          <td><span class="breakpoint-dose">${result.doseText || '-'}</td>
         </tr>
       </table>
       <div style="margin-top:0.7em;font-size:1em;color:#1976d2;">

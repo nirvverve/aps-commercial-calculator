@@ -3,7 +3,7 @@ export function renderTdsDisplay({
 }) {
   // Define the TDS scale range (commonly 0–5000 ppm for pools)
   const min = 0;
-  const max = 5000;
+  const max = 8000;
 
   // Defensive: ensure number
   currentTds = typeof currentTds === 'number' && !isNaN(currentTds) ? currentTds : 0;
