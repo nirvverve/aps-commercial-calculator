@@ -87,9 +87,9 @@ function acidDoseToLowerPh(currentPh, targetPh, gallons, alkalinity) {
   const acidFlOz = 1.3 * (alkalinity / 100) * (pHdrop / 0.1) * (gallons / 10000);
   if (acidFlOz <= 0) return null;
   if (acidFlOz < 128) {
-    return `${acidFlOz.toFixed(1)} fl oz muriatic acid (31.45%)`;
+    return `${acidFlOz.toFixed(1)} fl oz muriatic acid`;
   } else {
-    return `${(acidFlOz / 128).toFixed(2)} gal (${acidFlOz.toFixed(1)} fl oz) muriatic acid (31.45%)`;
+    return `${(acidFlOz / 128).toFixed(2)} gal (${acidFlOz.toFixed(1)} fl oz) muriatic acid`;
   }
 }
 
@@ -107,8 +107,6 @@ function sodaAshDose(current, target, gallons, alkalinity) {
   }
 }
 
-// ... rest of code remains same
-
 function acidDoseForAlk(currentAlk, targetAlk, gallons) {
   if (currentAlk <= targetAlk) return null;
   const ppmDrop = currentAlk - targetAlk;
@@ -117,18 +115,33 @@ function acidDoseForAlk(currentAlk, targetAlk, gallons) {
   const flOz = gallonsAcid * 128;
   if (gallonsAcid < 0.01) return null;
   if (gallonsAcid < 1) {
-    return `${flOz.toFixed(1)} fl oz muriatic acid.`;
+    return `${flOz.toFixed(1)} fl oz muriatic acid`;
   } else {
-    return `${gallonsAcid.toFixed(2)} gal (${flOz.toFixed(1)} fl oz) muriatic acid.`;
+    // For extremely high alkalinity, only show gallons (no fl oz conversion)
+    return `${gallonsAcid.toFixed(2)} gal muriatic acid`;
   }
 }
 
-// ... rest of code remains same
-
-function splitAcidDose(totalDose, days) {
+function splitAcidDose(totalDose, days, currentAlk = null, targetAlk = null) {
   if (!totalDose) return null;
-  return `Add 1/${days} of total dose (${totalDose}) per day for ${days} days`;
+  
+  // Extract the numeric amount and unit from the total dose string
+  const match = totalDose.match(/(\d+\.?\d*)\s*(gal|fl oz)/);
+  if (!match) return `Add 1/${days} of total dose ${totalDose} per day for ${days} days`;
+  
+  const amount = parseFloat(match[1]);
+  const unit = match[2];
+  const dailyAmount = (amount / days).toFixed(2);
+  
+  if (unit === 'gal') {
+    // Include the alkalinity range in the main message
+    const alkRange = (currentAlk && targetAlk) ? ` to lower alkalinity from ${currentAlk} ppm to ${targetAlk} ppm` : '';
+    return `Since alkalinity is above 180 ppm, we must lower this before attempting to adjust other parameters. To lower alkalinity, add <bold>${dailyAmount}<bold> gal of muriatic acid directly to the pool every day for ${days} straight days${alkRange}. Retest alkalinity each day to confirm progress. Only add acid at night after the pool closes.`;
+  } else {
+    return `Add ${dailyAmount} ${unit} muriatic acid per day for ${days} days`;
+  }
 }
+
 // --- Main Water Balance Steps Function ---
 
 /**
@@ -154,6 +167,7 @@ function getWaterBalanceSteps({
    const superHighAlk = current.alkalinity > 180;
    const superHighCa = current.calcium > 600;
    const highCa = current.calcium > 400;
+   
    // Calculate LSI for current water
    const lsi = advancedLSI({
     ph: current.ph,
@@ -164,35 +178,43 @@ function getWaterBalanceSteps({
     tds: tds !== undefined ? tds : 1000
    });
  
-   // If super high alk and not super high calcium, prioritize alk
-   if (superHighAlk && current.calcium < 500) {
-     // Calculate total acid needed to bring alk to 120
-     const totalAcidDose = acidDoseForAlk(current.alkalinity, 100, poolVolume);
-     // Split over 3 days
-     const perDayDose = splitAcidDose(totalAcidDose, 3);
-     steps.push({
-       key: 'alkalinity',
-       parameter: 'Total Alkalinity',
-       current: current.alkalinity,
-       target: 100,
-       dose: perDayDose,
-       note: 'Alkalinity is extremely high. Lower alkalinity in stages over 3 days before adjusting other parameters.'
-     });
-     notes.push('Alkalinity is extremely high. Lower alkalinity in stages over 3 days before adjusting other parameters.');
-     // Defer all other adjustments
-     return { steps, notes };
+   // PRIORITY 1: Super high alkalinity ALWAYS takes precedence
+   // If alkalinity is above 180, prioritize alkalinity reduction regardless of calcium levels
+   if (superHighAlk) {
+    // Calculate total acid needed to bring alk to 100
+    const totalAcidDose = acidDoseForAlk(current.alkalinity, 100, poolVolume);
+    // Split over 3 days - now pass the alkalinity values
+    const perDayDose = splitAcidDose(totalAcidDose, 3, current.alkalinity, 100);
+    steps.push({
+      key: 'alkalinity',
+      parameter: 'Total Alkalinity',
+      current: current.alkalinity,
+      target: 100,
+      dose: perDayDose,
+      note: 'Alkalinity is extremely high. Lower alkalinity in stages over 3 days before adjusting other parameters.'
+    });
+    notes.push('Alkalinity is extremely high. Lower alkalinity in stages over 3 days before adjusting other parameters.');
+    
+    // If calcium is also super high, add additional note about future calcium management
+    if (superHighCa) {
+      notes.push('Both alkalinity and calcium are extremely high. Address alkalinity first, then manage calcium with lower pH target (7.2) in subsequent visits.');
+    }
+    
+    // Defer all other adjustments when alkalinity is super high
+    return { steps, notes };
    }
  
-   // If super high calcium, lower pH target for LSI
-   if (superHighCa || (superHighAlk && highCa)) {
-     t.ph = 7.2; // or 7.3, based on your preference
-     notes.push('Calcium is extremely high. Lower pH target to 7.2 for LSI balance.');
+   // PRIORITY 2: If super high calcium (but alkalinity is NOT super high), lower pH target for LSI
+   if (superHighCa && !superHighAlk) {
+    t.ph = 7.2;
+    notes.push('Calcium is extremely high (>600 ppm) and alkalinity is manageable. Lower pH target to 7.2 for LSI balance.');
    }
  
-   // If LSI > 0.5, show warning and prioritize alk/pH
+   // If LSI > 0.5, show warning and prioritize alk/pH (only if alkalinity wasn't already handled above)
    if (
     lsi > 0.5 &&
-    ((current.alkalinity > t.alkalinity) || (current.ph > t.ph))
+    ((current.alkalinity > t.alkalinity) || (current.ph > t.ph)) &&
+    !superHighAlk
   ) {
     notes.push('LSI is in extreme scaling condition (>0.5). Prioritize lowering alkalinity and pH.');
   }
@@ -213,7 +235,7 @@ function getWaterBalanceSteps({
     // If anticipated pH is above target, recommend acid dose
     if (anticipatedPh > t.ph) {
       anticipatedAcidDose = acidDose(anticipatedPh, t.ph, poolVolume, t.alkalinity);
-      anticipatedPhNote = `Note: Adding sodium bicarbonate to raise alkalinity by ${alkIncrease} ppm is expected to raise pH from ${current.ph} to approximately ${anticipatedPh}. After the bicarb is fully dispersed (wait 30 minutes), test pH and add acid as needed to bring pH down to ${t.ph}. Recommended acid dose: ${anticipatedAcidDose}.`;
+      anticipatedPhNote = `Note: Adding sodium bicarbonate to raise alkalinity by ${alkIncrease} ppm is expected to raise pH from ${current.ph} to approximately ${anticipatedPh}. After the bicarb is fully dispersed (wait 10 minutes), test pH and add acid as needed to bring pH down to ${t.ph}. Recommended acid dose: ${anticipatedAcidDose}.`;
       notes.push(anticipatedPhNote);
     } else {
       anticipatedPhNote = `Note: Adding sodium bicarbonate to raise alkalinity by ${alkIncrease} ppm is expected to raise pH from ${current.ph} to approximately ${anticipatedPh}.`;
@@ -336,8 +358,14 @@ function renderTodayDosageCards({
     function formatCumulativeEffect(step) {
       let effect = '';
       if (step.key === 'alkalinity' && step.dose) {
-        const direction = step.target > step.current ? 'raise' : 'lower';
-        effect = `to ${direction} alkalinity from ${step.current} ppm to ${step.target} ppm.`;
+        // Check if this is the super high alkalinity case (dose contains the full message)
+        if (step.dose.includes('To lower alkalinity, add')) {
+          // Don't add additional text for super high alkalinity - it's already in the dose
+          effect = '';
+        } else {
+          const direction = step.target > step.current ? 'raise' : 'lower';
+          effect = `to ${direction} alkalinity from ${step.current} ppm to ${step.target} ppm.`;
+        }
       } else if (step.key === 'calcium' && step.dose) {
         effect = `to raise calcium hardness from ${step.current} ppm to ${step.target} ppm.`;
       } else if (step.key === 'cya' && step.dose) {
@@ -370,7 +398,7 @@ function renderTodayDosageCards({
             to lower pH from ${anticipatedPh} to ${steps.find(s => s.key === 'ph').target}.
           </div>
           <div style="font-style:italic; color:#b71c1c; margin-top:0.5em;">
-            Wait 15 - 30 minutes to adjust pH after adding sodium bicarbonate.
+            Wait 10 minutes to adjust pH after adding sodium bicarbonate.
           </div>
         </div>
       `;
@@ -386,7 +414,7 @@ function renderTodayDosageCards({
             to raise pH from ${anticipatedPh} to ${steps.find(s => s.key === 'ph').target}.
           </div>
           <div style="font-style:italic; color:#b71c1c; margin-top:0.5em;">
-            Wait 15 - 30 minutes before adjusting pH after adding sodium bicarbonate.
+            Wait 10 minutes before adjusting pH after adding sodium bicarbonate.
           </div>
         </div>
       `;
@@ -402,7 +430,7 @@ function renderTodayDosageCards({
               to lower pH from ${phStep.current} to ${phStep.target}.
             </div>
             <div style="font-style:italic; color:#b71c1c; margin-top:0.5em;">
-              Wait 15 - 30 minutes before adjusting pH after adding calcium chloride.
+              Wait 10 minutes before adjusting pH after adding calcium chloride.
             </div>
           </div>
         `;
@@ -416,7 +444,7 @@ function renderTodayDosageCards({
               to raise pH from ${phStep.current} to ${phStep.target}.
             </div>
             <div style="font-style:italic; color:#b71c1c; margin-top:0.5em;">
-              Wait 15 - 30 minutes before adjusting pH after adding calcium chloride.
+              Wait 10 minutes before adjusting pH after adding calcium chloride.
             </div>
           </div>
         `;
@@ -433,7 +461,7 @@ function renderTodayDosageCards({
             to raise pH from ${anticipatedPh} to ${steps.find(s => s.key === 'ph').target}.
           </div>
           <div style="font-style:italic; color:#b71c1c; margin-top:0.5em;">
-            Wait 15 - 30 minutes before adjusting pH after adding cyanuric acid.
+            Wait 10 minutes before adjusting pH after adding cyanuric acid.
           </div>
         </div>
       `;
@@ -479,52 +507,43 @@ function renderTodayDosageCards({
   }
 
   // --- Manual Chlorine Dosing / Shocking Section ---
-  // Show the chlorine dose table and Breakpoint card (with dose written out)
-  let manualChlorineSection = '';
-  const combinedChlorine = typeof totalChlorine === 'number' && typeof freeChlorine === 'number'
-    ? totalChlorine - freeChlorine
-    : 0;
+ // Keep only the shock notification card if needed, without the full dose table
+ let shockNotificationCard = '';
+ const combinedChlorine = typeof totalChlorine === 'number' && typeof freeChlorine === 'number'
+   ? totalChlorine - freeChlorine
+   : 0;
 
-  if (doseTableHTML || BreakpointChlorinationHTML) {
-    let BreakpointDoseText = '';
-    if (BreakpointChlorinationHTML) {
-      const match = BreakpointChlorinationHTML.match(/<span class="breakpoint-dose">([^<]+)<\/span>/);
-      if (match) {
-        BreakpointDoseText = match[1];
-      }
-    }
-    manualChlorineSection = `
-      <div class="manual-chlorine-section">
-        <h4>Manual Chlorine Dosing / Shocking</h4>
-        ${doseTableHTML ? `<div class="chlorine-dose-table">${doseTableHTML}</div>` : ''}
-        ${
-          (combinedChlorine > 0.6 && BreakpointChlorinationHTML) ? `
-          <div class="chem-card fac" style="background:#fffde7;">
-            <strong>Shock Needed:</strong>
-            <div style="margin:0.5em 0 0.2em 0;">
-              Combined chlorine is above 0.6 ppm.${BreakpointDoseText ? ` Add <strong>${BreakpointDoseText}</strong> to achieve breakpoint chlorination.` : ''}<br>
-              <em>Consult "Does My Pool Need To Be Shocked?" for details.</em>
-            </div>
-          </div>
-        ` : ''
-        }
-      </div>
-    `;
-  }
+ if (combinedChlorine > 0.6 && BreakpointChlorinationHTML) {
+   let BreakpointDoseText = '';
+   const match = BreakpointChlorinationHTML.match(/<span class="breakpoint-dose">([^<]+)<\/span>/);
+   if (match) {
+     BreakpointDoseText = match[1];
+   }
+   
+   shockNotificationCard = `
+     <h4>Shocking Needed:</h4>
+     <div class="chem-card fac" style="background:#fffde7;">
+       <strong>Shock Needed:</strong>
+       <div style="margin:0.5em 0 0.2em 0;">
+         Combined chlorine is above 0.6 ppm.${BreakpointDoseText ? ` Add <strong>${BreakpointDoseText}</strong> to achieve breakpoint chlorination.` : ''}<br>
+         <em>Consult "Does My Pool Need To Be Shocked?" for details.</em>
+       </div>
+     </div>
+   `;
+ }
 
-  // If nothing to add, show a message
-  if (!firstWaterBalanceStep && !phStep && !manualChlorineSection) {
-    return `
-      <details class="today-dosage-details" open>
-        <summary><strong>What Should I Add to the Pool Today?</strong></summary>
-        <div style="margin:1em 0;">
-          <em>All parameters are within target range. No chemical additions needed today.</em>
-        </div>
-      </details>
-    `;
-  }
-
-  return `
+ // If nothing to add, show a message
+ if (!firstWaterBalanceStep && !phStep && !shockNotificationCard) {
+   return `
+     <details class="today-dosage-details" open>
+       <summary><strong>What Should I Add to the Pool Today?</strong></summary>
+       <div style="margin:1em 0;">
+         <em>All parameters are within target range. No chemical additions needed today.</em>
+       </div>
+     </details>
+   `;
+ }
+ return `
     <details class="today-dosage-details" open>
       <summary><strong>What Should I Add to the Pool Today?</strong></summary>
       <div style="margin:1em 0;">
@@ -532,7 +551,7 @@ function renderTodayDosageCards({
         ${waterBalanceCards}
         ${pHAdjustmentCards}
         ${otherParamsNote}
-        ${manualChlorineSection}
+        ${shockNotificationCard}
       </div>
     </details>
   `;

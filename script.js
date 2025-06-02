@@ -1,4 +1,4 @@
-import { poolStandards, chlorineTypes } from './config.js';
+import { poolStandards, chlorineTypes, goldenNumbers } from './config.js';
 import { renderAlkalinityDisplay } from './AlkalinityDisplay.js';
 import { renderCalciumHardnessDisplay } from './CalciumHardnessDisplay.js';
 import { renderPhDisplay } from './PhDisplay.js';
@@ -95,8 +95,13 @@ const ALKALINITY_FACTORS = [
 const chlorineTypeOptionsDiv = document.getElementById('chlorineTypeOptions');
 let selectedChlorineType = null;
 
+// Only show allowed chlorine types (exclude 10% liquid and 68% cal-hypo)
+const allowedChlorineTypes = chlorineTypes.filter(type =>
+  type.name !== "Liquid Chlorine (10%)" && type.name !== "Calcium Hypochlorite (68%)"
+);
+
 // Dynamically create clickable chlorine type buttons
-chlorineTypes.forEach(type => {
+allowedChlorineTypes.forEach(type => {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'chlorine-type-btn';
@@ -274,7 +279,18 @@ document.getElementById('poolForm').addEventListener('submit', function(e) {
     temperature: parseFloat(temperatureInput.value),
     tds: parseFloat(tdsInput.value)
   };
-
+  // Expert Mode custom targets
+  let customTargets = {};
+  if (window.expertModeCheckbox && window.expertModeCheckbox.checked) {
+    customTargets = {
+      freeChlorine: parseFloat(window.targetInputs.freeChlorine.value),
+      ph: parseFloat(window.targetInputs.ph.value),
+      alkalinity: parseFloat(window.targetInputs.alkalinity.value),
+      calcium: parseFloat(window.targetInputs.calcium.value),
+      cya: parseFloat(window.targetInputs.cya.value),
+      salt: parseFloat(window.targetInputs.salt.value)
+    };
+  }
   const standards = getCurrentStandards();
   if (!standards) {
     resultsDiv.innerHTML = `<p class="error">Please select state and pool type.</p>`;
@@ -403,14 +419,10 @@ const waterBalanceStepsHTML = renderWaterBalanceSteps({
   }
 });
 
-// --- Results Output ---
-// ... previous code remains the same
-// ... previous code remains the same
-
 resultsDiv.innerHTML = `
 <h2>Full Details</h2>
     ${todayDosageCardsHTML}
-<details class="compliance-summary-details" open>
+<details class="compliance-summary-details" closed>
   <summary><strong>Is the Pool Compliant With State Code ?</strong></summary>
   <div class="compliance-summary-table-wrap">
     <div class="state-name"><strong>State:</strong> ${selectedState}</div>
@@ -475,7 +487,7 @@ resultsDiv.innerHTML = `
     ${warnings.length > 0 ? `<ul class="compliance-warnings">${warnings.map(w => `<li>⚠️ ${w}</li>`).join('')}</ul>` : ''}
   </div>
 </details>
-<details class="water-balance-details" open>
+<details class="water-balance-details" closed>
   <summary><strong>Is My Pool Balanced ?</strong></summary>
   <h2>LSI Scale</h2>
   <div class="water-balance-charts">
@@ -484,13 +496,13 @@ resultsDiv.innerHTML = `
     ${waterBalanceStepsHTML}
   </div>
 </details>
-<details class="sanitizer-details" open>
+<details class="sanitizer-details" closed>
   <summary><strong>Does My Pool Need To Be Shocked ?</strong></summary>
   <div class="sanitizer-parameter-charts">
     ${BreakpointChlorinationHTML}
   </div>
 </details>
-<details class="water-balance-details" open>
+<details class="water-balance-details" closed>
   <summary><strong>Water Balance Detail</strong></summary>
   <div class="water-parameter-charts">
     ${pHDisplayHTML}
@@ -499,19 +511,225 @@ resultsDiv.innerHTML = `
     ${TdsDisplayHTML}
   </div>
 </details>
-<details class="sanitizer-details" open>
-  <summary><strong>Chlorine & Stabilizer Detail</strong></summary>
+<details class="sanitizer-details" closed>
+  <summary><strong>Chlorine, CYA, and Manual Dosing Detail</strong></summary>
   <div class="sanitizer-parameter-charts">
     ${ChlorineScaleDisplayHTML}
     ${CyaDisplayHTML}
     ${doseTableHTML}
   </div>
 </details>
-<details class="salt-dose-details" open>
+<details class="salt-dose-details" closed>
   <summary><strong>Salt Dose Recommendation</strong></summary>
   <div class="salt-dose-parameter-charts">
     ${saltDoseHTML}
   </div>
 </details>
 `;
+    });
+// --- Expert Mode Logic ---
+document.addEventListener('DOMContentLoaded', () => {
+  // --- Expert Mode DOM lookups ---
+  const expertModeCheckbox = document.getElementById('expertMode');
+  const expertModeSection = document.getElementById('expertModeSection');
+  const targetInputs = {
+    freeChlorine: document.getElementById('targetFreeChlorine'),
+    ph: document.getElementById('targetPh'),
+    alkalinity: document.getElementById('targetAlkalinity'),
+    calcium: document.getElementById('targetCalcium'),
+    cya: document.getElementById('targetCya'),
+    salt: document.getElementById('targetSalt')
+  };
+  const lsiCurrentDisplay = document.getElementById('lsiCurrentDisplay');
+  const lsiTargetDisplay = document.getElementById('lsiTargetDisplay');
+
+  // Check if elements exist before adding event listeners
+  if (!expertModeCheckbox || !expertModeSection) {
+    console.error('Expert Mode elements not found');
+    return;
+  }
+
+  // Show/hide expert mode section
+  expertModeCheckbox.addEventListener('change', () => {
+    console.log('Expert mode checkbox changed:', expertModeCheckbox.checked);
+    console.log('Expert mode section element:', expertModeSection);
+    
+    expertModeSection.style.display = expertModeCheckbox.checked ? 'block' : 'none';
+    
+    if (expertModeCheckbox.checked) {
+      console.log('Expert mode enabled, pre-filling values');
+      // Pre-fill with current golden numbers or last used targets
+      const poolType = selectedPoolType || 'pool';
+      console.log('Pool type:', poolType);
+      console.log('Golden numbers:', goldenNumbers);
+      
+      const golden = goldenNumbers ? goldenNumbers[poolType] : {
+        freeChlorine: 2,
+        ph: 7.5,
+        alkalinity: 90,
+        calcium: 300,
+        cya: 30,
+        salt: 0
+      };
+      
+      console.log('Using golden numbers:', golden);
+      
+      targetInputs.freeChlorine.value = golden.freeChlorine;
+      targetInputs.ph.value = golden.ph;
+      targetInputs.alkalinity.value = golden.alkalinity;
+      targetInputs.calcium.value = golden.calcium;
+      targetInputs.cya.value = golden.cya;
+      targetInputs.salt.value = golden.salt || 0;
+      updateLSIDisplay();
+    }
+  });
+  // Update LSI displays when any target or current value changes
+  Object.values(targetInputs).forEach(input => {
+    if (input) input.addEventListener('input', updateLSIDisplay);
+  });
+  [
+    document.getElementById('ph'),
+    document.getElementById('alkalinity'),
+    document.getElementById('calcium'),
+    document.getElementById('cya'),
+    document.getElementById('tds'),
+    document.getElementById('temperature')
+  ].forEach(input => {
+    if (input) input.addEventListener('input', updateLSIDisplay);
+  });
+
+  function updateLSIDisplay() {
+    // Get current values
+    const current = {
+      ph: parseFloat(document.getElementById('ph').value) || 0,
+      alkalinity: parseFloat(document.getElementById('alkalinity').value) || 0,
+      calcium: parseFloat(document.getElementById('calcium').value) || 0,
+      cya: parseFloat(document.getElementById('cya').value) || 0,
+      tds: parseFloat(document.getElementById('tds').value) || 1000,
+      tempF: parseFloat(document.getElementById('temperature').value) || 77
+    };
+    // Get target values
+    const targets = {
+      ph: parseFloat(targetInputs.ph.value) || 0,
+      alkalinity: parseFloat(targetInputs.alkalinity.value) || 0,
+      calcium: parseFloat(targetInputs.calcium.value) || 0,
+      cya: parseFloat(targetInputs.cya.value) || 0,
+      tds: current.tds,
+      tempF: current.tempF
+    };
+    // Calculate LSI for current and targets
+    if (typeof advancedLSI === 'function') {
+      const lsiCurrent = advancedLSI(current);
+      const lsiTarget = advancedLSI(targets);
+      if (lsiCurrentDisplay) lsiCurrentDisplay.textContent = lsiCurrent.toFixed(2);
+      if (lsiTargetDisplay) lsiTargetDisplay.textContent = lsiTarget.toFixed(2);
+    } else {
+      if (lsiCurrentDisplay) lsiCurrentDisplay.textContent = '-';
+      if (lsiTargetDisplay) lsiTargetDisplay.textContent = '-';
+    }
+  }
+
+  // Make variables available globally for form submission
+  window.expertModeCheckbox = expertModeCheckbox;
+  window.targetInputs = targetInputs;
+});
+
+// --- Sodium Thiosulfate (Chlorine Neutralizer) Calculator ---
+
+// Modal open/close logic
+const openThioCalcBtn = document.getElementById('openThioCalc');
+const thioCalcModal = document.getElementById('thioCalcModal');
+const closeThioCalcBtn = document.getElementById('closeThioCalc');
+const thioForm = document.getElementById('thioForm');
+const thioResults = document.getElementById('thioResults');
+
+openThioCalcBtn.addEventListener('click', () => {
+  thioCalcModal.style.display = 'flex';
+});
+closeThioCalcBtn.addEventListener('click', () => {
+  thioCalcModal.style.display = 'none';
+  thioResults.innerHTML = '';
+  thioForm.reset();
+});
+thioCalcModal.addEventListener('click', (e) => {
+  if (e.target === thioCalcModal) {
+    thioCalcModal.style.display = 'none';
+    thioResults.innerHTML = '';
+    thioForm.reset();
+  }
+});
+
+// Sodium thiosulfate dose calculation
+function calculateThioDose(currentFC, targetFC, poolVolume) {
+  // 1.3 oz per 1 ppm per 10,000 gallons
+  const ppmToRemove = currentFC - targetFC;
+  if (ppmToRemove <= 0) return 0;
+  return ppmToRemove * (poolVolume / 10000) * 1.3;
+}
+// Helper to format ounces as "X oz (Y lb Z oz)"
+function formatOunces(oz) {
+  const lbs = Math.floor(oz / 16);
+  const remOz = oz % 16;
+  if (lbs > 0) {
+    return `${oz.toFixed(2)} oz (${lbs} lb${lbs > 1 ? 's' : ''} ${remOz.toFixed(2)} oz)`;
+  } else {
+    return `${oz.toFixed(2)} oz`;
+  }
+}
+
+// Render the step table
+function renderThioTable(currentFC, poolVolume) {
+  let html = `
+    <div style="background:#fffde7;border-left:5px solid #fbc02d;padding:12px 18px;margin-bottom:1em;border-radius:7px;">
+      <strong>Note:</strong> Sodium thiosulfate can take up to two hours to work. Add <b>half</b> the required dose, wait two hours, and retest. If needed, add the remaining amount.
+    </div>
+    <h4>Dose Table (Sodium Thiosulfate Needed)</h4>
+    <table class="dose-table" style="margin-top:1em;">
+      <thead>
+        <tr>
+          <th>Target FC (ppm)</th>
+          <th>Ounces Needed<br><span style="font-weight:normal;font-size:0.95em;">(dry oz, lbs &amp; oz)</span></th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  // 5 ppm steps from current down to 10
+  for (let fc = Math.floor(currentFC / 5) * 5; fc > 10; fc -= 5) {
+    if (fc < 0) break;
+    if (fc < currentFC) {
+      const dose = calculateThioDose(currentFC, fc, poolVolume);
+      html += `<tr><td>${fc.toFixed(1)}</td><td>${formatOunces(dose)}</td></tr>`;
+    }
+  }
+  // 1.0 ppm steps from 10 down to 0
+  for (let fc = 10; fc >= 0; fc -= 1.0) {
+    if (fc < 0) fc = 0;
+    if (fc < currentFC) {
+      const dose = calculateThioDose(currentFC, fc, poolVolume);
+      html += `<tr><td>${fc.toFixed(1)}</td><td>${formatOunces(dose)}</td></tr>`;
+    }
+    if (fc === 0) break;
+  }
+  html += `</tbody></table>
+    <div style="margin-top:1em;font-size:0.98em;color:#757575;">
+      <em>Always retest pH and alkalinity after treatment.</em>
+    </div>
+  `;
+  return html;
+}
+
+// Form submit handler
+thioForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  const poolVolume = parseFloat(document.getElementById('thioPoolVolume').value);
+  const currentFC = parseFloat(document.getElementById('thioCurrentFC').value);
+  const ph = parseFloat(document.getElementById('thioPH').value);
+
+  // pH warning
+  let warning = '';
+  if (ph < 7.2) {
+    warning = `<div style="color:#b71c1c;font-weight:bold;margin-bottom:0.7em;">Warning: pH is already low. Sodium thiosulfate may lower pH further. Adjust pH before neutralizing chlorine.</div>`;
+  }
+
+  thioResults.innerHTML = warning + renderThioTable(currentFC, poolVolume);
 });

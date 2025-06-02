@@ -788,3 +788,21 @@ details.salt-dose-details > summary {
   background: #e3f2fd;
   border: 1.5px solid #1976d2;
 }
+.dose-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1em;
+}
+.dose-table th, .dose-table td {
+  border: 1px solid #90caf9;
+  padding: 0.5em 1em;
+  text-align: center;
+}
+.dose-table th {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+#thioCalcModal > div {
+  max-height: 90vh;
+  overflow-y: auto;
+}
